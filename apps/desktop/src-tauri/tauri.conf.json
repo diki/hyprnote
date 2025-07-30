@@ -19,8 +19,8 @@
   "bundle": {
     "publisher": "Fastrepl",
     "active": true,
-    "createUpdaterArtifacts": true,
-    "targets": "all",
+    "createUpdaterArtifacts": false,
+    "targets": ["app"],
     "icon": [
       "icons/stable/32x32.png",
       "icons/stable/128x128.png",

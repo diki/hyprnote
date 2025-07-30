@@ -10,6 +10,22 @@ export function useLicense() {
   const getLicense = useQuery({
     queryKey: LICENSE_QUERY_KEY,
     queryFn: async () => {
+      // Check if license check is disabled via environment variable
+      if (import.meta.env.VITE_DISABLE_LICENSE_CHECK === "true") {
+        return {
+          valid: true,
+          expiry: new Date(
+            Date.now() + 365 * 24 * 60 * 60 * 1000
+          ).toISOString(), // 1 year from now
+          key: "dev-bypass-key-••••••••••••••••",
+          entitlements: [],
+          metadata: {
+            stripeCustomerId: null,
+            stripeSubscriptionId: null,
+          },
+        };
+      }
+
       const license = await keygen.getLicense();
       if (license?.valid) {
         return license;
@@ -57,7 +73,7 @@ export function useLicense() {
     }
 
     const daysUntilExpiry = Math.floor(
-      (new Date(license.expiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+      (new Date(license.expiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
     );
 
     return daysUntilExpiry <= 3 && daysUntilExpiry > 0;
@@ -81,10 +97,7 @@ export function useLicense() {
 
   const deactivateLicense = useMutation({
     mutationFn: async () => {
-      await Promise.all([
-        keygen.resetLicense(),
-        keygen.resetLicenseKey(),
-      ]);
+      await Promise.all([keygen.resetLicense(), keygen.resetLicenseKey()]);
       return null;
     },
     onError: console.error,

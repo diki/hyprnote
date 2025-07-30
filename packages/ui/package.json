@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./globals.css": "./dist/globals.css",
+    "./globals.css": "./src/styles/globals.css",
+    "./pushable.css": "./src/styles/pushable.css",
     "./postcss.config": "./postcss.config.mjs",
     "./tailwind.config": "./tailwind.config.ts",
     "./lib/*": "./src/lib/*.ts",

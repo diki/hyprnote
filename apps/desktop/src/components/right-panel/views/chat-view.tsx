@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
 import { useHypr, useRightPanel } from "@/contexts";
+import { LogProvider } from "@/contexts/log-context";
 import {
   ChatHistoryView,
   ChatInput,
@@ -10,6 +11,7 @@ import {
   EmptyChatState,
   FloatingActionButtons,
 } from "../components/chat";
+import { LogPanel } from "../components/chat/log-panel";
 
 import { useActiveEntity } from "../hooks/useActiveEntity";
 import { useChatLogic } from "../hooks/useChatLogic";
@@ -17,7 +19,7 @@ import { useChatQueries } from "../hooks/useChatQueries";
 import type { Message } from "../types/chat-types";
 import { focusInput, formatDate } from "../utils/chat-utils";
 
-export function ChatView() {
+function ChatViewContent() {
   const navigate = useNavigate();
   const { isExpanded, chatInputRef } = useRightPanel();
   const { userId } = useHypr();
@@ -27,7 +29,9 @@ export function ChatView() {
   const [showHistory, setShowHistory] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [hasChatStarted, setHasChatStarted] = useState(false);
-  const [currentChatGroupId, setCurrentChatGroupId] = useState<string | null>(null);
+  const [currentChatGroupId, setCurrentChatGroupId] = useState<string | null>(
+    null
+  );
   const [chatHistory, _setChatHistory] = useState<ChatSession[]>([]);
 
   const prevIsGenerating = useRef(false);
@@ -111,7 +115,10 @@ export function ChatView() {
 
   const handleNoteBadgeClick = () => {
     if (activeEntity) {
-      navigate({ to: `/app/${activeEntity.type}/$id`, params: { id: activeEntity.id } });
+      navigate({
+        to: `/app/${activeEntity.type}/$id`,
+        params: { id: activeEntity.id },
+      });
     }
   };
 
@@ -141,6 +148,8 @@ export function ChatView() {
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden h-full">
+      <LogPanel />
+
       <FloatingActionButtons
         onNewChat={handleNewChat}
         onViewHistory={handleViewHistory}
@@ -148,21 +157,19 @@ export function ChatView() {
         onSelectChatGroup={handleSelectChatGroup}
       />
 
-      {messages.length === 0
-        ? (
-          <EmptyChatState
-            onQuickAction={handleQuickAction}
-            onFocusInput={handleFocusInput}
-          />
-        )
-        : (
-          <ChatMessagesView
-            messages={messages}
-            sessionTitle={sessionData.data?.title || "Untitled"}
-            hasEnhancedNote={!!(sessionData.data?.enhancedContent)}
-            onApplyMarkdown={handleApplyMarkdown}
-          />
-        )}
+      {messages.length === 0 ? (
+        <EmptyChatState
+          onQuickAction={handleQuickAction}
+          onFocusInput={handleFocusInput}
+        />
+      ) : (
+        <ChatMessagesView
+          messages={messages}
+          sessionTitle={sessionData.data?.title || "Untitled"}
+          hasEnhancedNote={!!sessionData.data?.enhancedContent}
+          onApplyMarkdown={handleApplyMarkdown}
+        />
+      )}
 
       <ChatInput
         inputValue={inputValue}
@@ -176,5 +183,13 @@ export function ChatView() {
         isGenerating={isGenerating}
       />
     </div>
+  );
+}
+
+export function ChatView() {
+  return (
+    <LogProvider>
+      <ChatViewContent />
+    </LogProvider>
   );
 }
