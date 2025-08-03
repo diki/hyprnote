@@ -1,10 +1,23 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { customProvider, extractReasoningMiddleware, type TextStreamPart, type ToolSet, wrapLanguageModel } from "ai";
+import {
+  customProvider,
+  extractReasoningMiddleware,
+  type TextStreamPart,
+  type ToolSet,
+  wrapLanguageModel,
+} from "ai";
 
 import { commands as connectorCommands } from "@hypr/plugin-connector";
 import { fetch as customFetch } from "@hypr/utils";
 
-export { generateObject, generateText, type Provider, smoothStream, streamText, tool } from "ai";
+export {
+  generateObject,
+  generateText,
+  type Provider,
+  smoothStream,
+  streamText,
+  tool,
+} from "ai";
 
 export const localProviderName = "hypr-llm-local";
 export const remoteProviderName = "hypr-llm-remote";
@@ -22,8 +35,13 @@ const thinkMiddleware = extractReasoningMiddleware({
 });
 
 const getModel = async ({ onboarding }: { onboarding: boolean }) => {
-  const getter = onboarding ? connectorCommands.getLocalLlmConnection : connectorCommands.getLlmConnection;
-  const { type, connection: { api_base, api_key } } = await getter();
+  const getter = onboarding
+    ? connectorCommands.getLocalLlmConnection
+    : connectorCommands.getLlmConnection;
+  const {
+    type,
+    connection: { api_base, api_key },
+  } = await getter();
 
   if (!api_base) {
     throw new Error("no_api_base");
@@ -35,14 +53,14 @@ const getModel = async ({ onboarding }: { onboarding: boolean }) => {
     apiKey: api_key ?? "SOMETHING_NON_EMPTY",
     fetch: customFetch,
     headers: {
-      "Origin": "http://localhost:1420",
+      Origin: "http://localhost:1420",
     },
   });
 
   const customModel = await connectorCommands.getCustomLlmModel();
   const id = onboarding
     ? "mock-onboarding"
-    : (type === "Custom" && customModel)
+    : type === "Custom" && customModel
     ? customModel
     : "gpt-4";
 
@@ -66,85 +84,94 @@ type TransformState = {
   isCurrentlyInCodeBlock: boolean;
 };
 
-export const markdownTransform = <TOOLS extends ToolSet>() => (_options: { tools: TOOLS; stopStream: () => void }) => {
-  const CODE_FENCE_MARKER = "```";
+export const markdownTransform =
+  <TOOLS extends ToolSet>() =>
+  (_options: { tools: TOOLS; stopStream: () => void }) => {
+    const CODE_FENCE_MARKER = "```";
 
-  const extractAndProcessLines = (
-    state: TransformState,
-    controller: TransformStreamDefaultController<TextStreamPart<TOOLS>>,
-    processRemainingContent: boolean = false,
-  ) => {
-    let textToOutput = "";
+    const extractAndProcessLines = (
+      state: TransformState,
+      controller: TransformStreamDefaultController<TextStreamPart<TOOLS>>,
+      processRemainingContent: boolean = false
+    ) => {
+      let textToOutput = "";
 
-    while (true) {
-      const nextLineBreakPosition = state.unprocessedText.indexOf("\n");
-      const hasCompleteLineToProcess = nextLineBreakPosition !== -1;
+      while (true) {
+        const nextLineBreakPosition = state.unprocessedText.indexOf("\n");
+        const hasCompleteLineToProcess = nextLineBreakPosition !== -1;
 
-      if (!hasCompleteLineToProcess) {
-        if (!processRemainingContent) {
+        if (!hasCompleteLineToProcess) {
+          if (!processRemainingContent) {
+            break;
+          }
+
+          const remainingText = state.unprocessedText;
+          if (remainingText.length > 0) {
+            state.unprocessedText = "";
+
+            const isCodeFence = remainingText.startsWith(CODE_FENCE_MARKER);
+            if (!isCodeFence) {
+              textToOutput += remainingText;
+            }
+          }
           break;
         }
 
-        const remainingText = state.unprocessedText;
-        if (remainingText.length > 0) {
-          state.unprocessedText = "";
+        const currentLineContent = state.unprocessedText.substring(
+          0,
+          nextLineBreakPosition
+        );
+        const textAfterCurrentLine = state.unprocessedText.substring(
+          nextLineBreakPosition + 1
+        );
 
-          const isCodeFence = remainingText.startsWith(CODE_FENCE_MARKER);
-          if (!isCodeFence) {
-            textToOutput += remainingText;
-          }
+        const isCodeFenceLine =
+          currentLineContent.startsWith(CODE_FENCE_MARKER);
+
+        if (isCodeFenceLine) {
+          state.isCurrentlyInCodeBlock = !state.isCurrentlyInCodeBlock;
+          state.unprocessedText = textAfterCurrentLine;
+          continue;
         }
-        break;
-      }
 
-      const currentLineContent = state.unprocessedText.substring(0, nextLineBreakPosition);
-      const textAfterCurrentLine = state.unprocessedText.substring(nextLineBreakPosition + 1);
-
-      const isCodeFenceLine = currentLineContent.startsWith(CODE_FENCE_MARKER);
-
-      if (isCodeFenceLine) {
-        state.isCurrentlyInCodeBlock = !state.isCurrentlyInCodeBlock;
+        const currentLineWithLineBreak = currentLineContent + "\n";
+        textToOutput += currentLineWithLineBreak;
         state.unprocessedText = textAfterCurrentLine;
-        continue;
       }
 
-      const currentLineWithLineBreak = currentLineContent + "\n";
-      textToOutput += currentLineWithLineBreak;
-      state.unprocessedText = textAfterCurrentLine;
-    }
+      if (textToOutput.length > 0) {
+        controller.enqueue({
+          type: "text-delta",
+          id: "transform",
+          text: textToOutput,
+        } as TextStreamPart<TOOLS>);
+      }
+    };
 
-    if (textToOutput.length > 0) {
-      controller.enqueue({
-        type: "text-delta",
-        textDelta: textToOutput,
-      } as TextStreamPart<TOOLS>);
-    }
-  };
+    return new TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>({
+      start(_controller) {
+        const state = this as unknown as TransformState;
+        state.unprocessedText = "";
+        state.isCurrentlyInCodeBlock = false;
+      },
 
-  return new TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>({
-    start(_controller) {
-      const state = this as unknown as TransformState;
-      state.unprocessedText = "";
-      state.isCurrentlyInCodeBlock = false;
-    },
+      transform(chunk, controller) {
+        const state = this as unknown as TransformState;
 
-    transform(chunk, controller) {
-      const state = this as unknown as TransformState;
+        const isNonTextChunk = chunk.type !== "text-delta";
+        if (isNonTextChunk) {
+          extractAndProcessLines(state, controller, true);
+          controller.enqueue(chunk);
+          return;
+        }
 
-      const isNonTextChunk = chunk.type !== "text-delta";
-      if (isNonTextChunk) {
+        state.unprocessedText += chunk.text;
+        extractAndProcessLines(state, controller, false);
+      },
+
+      flush(controller) {
+        const state = this as unknown as TransformState;
         extractAndProcessLines(state, controller, true);
-        controller.enqueue(chunk);
-        return;
-      }
-
-      state.unprocessedText += chunk.textDelta;
-      extractAndProcessLines(state, controller, false);
-    },
-
-    flush(controller) {
-      const state = this as unknown as TransformState;
-      extractAndProcessLines(state, controller, true);
-    },
-  });
-};
+      },
+    });
+  };

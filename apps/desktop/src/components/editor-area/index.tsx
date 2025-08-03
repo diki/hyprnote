@@ -13,7 +13,10 @@ import { commands as analyticsCommands } from "@hypr/plugin-analytics";
 import { commands as connectorCommands } from "@hypr/plugin-connector";
 import { commands as dbCommands } from "@hypr/plugin-db";
 import { commands as miscCommands } from "@hypr/plugin-misc";
-import { commands as templateCommands, type Grammar } from "@hypr/plugin-template";
+import {
+  commands as templateCommands,
+  type Grammar,
+} from "@hypr/plugin-template";
 import Editor, { type TiptapEditor } from "@hypr/tiptap/editor";
 import Renderer from "@hypr/tiptap/renderer";
 import { extractHashtags } from "@hypr/tiptap/shared";
@@ -26,14 +29,21 @@ import {
   modelProvider,
   smoothStream,
   streamText,
-  tool,
 } from "@hypr/utils/ai";
-import { useOngoingSession, useSession, useSessions } from "@hypr/utils/contexts";
+import {
+  useOngoingSession,
+  useSession,
+  useSessions,
+} from "@hypr/utils/contexts";
 import { enhanceFailedToast } from "../toast/shared";
 import { FloatingButton } from "./floating-button";
 import { NoteHeader } from "./note-header";
 
-async function generateTitleDirect(enhancedContent: string, targetSessionId: string, sessions: Record<string, any>) {
+async function generateTitleDirect(
+  enhancedContent: string,
+  targetSessionId: string,
+  sessions: Record<string, any>
+) {
   const [config, { type }, provider] = await Promise.all([
     dbCommands.getConfig(),
     connectorCommands.getLlmConnection(),
@@ -42,7 +52,10 @@ async function generateTitleDirect(enhancedContent: string, targetSessionId: str
 
   const [systemMessage, userMessage] = await Promise.all([
     templateCommands.render("create_title.system", { config, type }),
-    templateCommands.render("create_title.user", { type, enhanced_note: enhancedContent }),
+    templateCommands.render("create_title.user", {
+      type,
+      enhanced_note: enhancedContent,
+    }),
   ]);
 
   const model = provider.languageModel("defaultModel");
@@ -95,7 +108,7 @@ export default function EditorArea({
   const editorRef = useRef<{ editor: TiptapEditor | null }>(null);
   const editorKey = useMemo(
     () => `session-${sessionId}-${showRaw ? "raw" : "enhanced"}`,
-    [sessionId, showRaw],
+    [sessionId, showRaw]
   );
 
   const templatesQuery = useQuery({
@@ -104,8 +117,12 @@ export default function EditorArea({
     refetchOnWindowFocus: true,
   });
 
-  const preMeetingNote = useSession(sessionId, (s) => s.session.pre_meeting_memo_html) ?? "";
-  const hasTranscriptWords = useSession(sessionId, (s) => s.session.words.length > 0);
+  const preMeetingNote =
+    useSession(sessionId, (s) => s.session.pre_meeting_memo_html) ?? "";
+  const hasTranscriptWords = useSession(
+    sessionId,
+    (s) => s.session.words.length > 0
+  );
 
   const llmConnectionQuery = useQuery({
     queryKey: ["llm-connection"],
@@ -122,7 +139,9 @@ export default function EditorArea({
     isLocalLlm: llmConnectionQuery.data?.type === "HyprLocal",
     onSuccess: (content) => {
       if (hasTranscriptWords) {
-        generateTitleDirect(content, sessionId, sessionsStore).catch(console.error);
+        generateTitleDirect(content, sessionId, sessionsStore).catch(
+          console.error
+        );
       }
     },
   });
@@ -141,18 +160,21 @@ export default function EditorArea({
         setEnhancedContent(content);
       }
     },
-    [showRaw, setRawContent, setEnhancedContent],
+    [showRaw, setRawContent, setEnhancedContent]
   );
 
   const noteContent = useMemo(
     () => (showRaw ? rawContent : enhancedContent),
-    [showRaw, enhancedContent, rawContent],
+    [showRaw, enhancedContent, rawContent]
   );
 
-  const handleEnhanceWithTemplate = useCallback((templateId: string) => {
-    const targetTemplateId = templateId === "auto" ? null : templateId;
-    enhance.mutate({ templateId: targetTemplateId, triggerType: "template" });
-  }, [enhance]);
+  const handleEnhanceWithTemplate = useCallback(
+    (templateId: string) => {
+      const targetTemplateId = templateId === "auto" ? null : templateId;
+      enhance.mutate({ templateId: targetTemplateId, triggerType: "template" });
+    },
+    [enhance]
+  );
 
   const handleClickEnhance = useCallback(() => {
     enhance.mutate({ triggerType: "manual" });
@@ -180,7 +202,12 @@ export default function EditorArea({
       lastBacklinkSearchTime.current = now;
     }
 
-    const session = await dbCommands.listSessions({ type: "search", query, user_id: userId, limit: 5 });
+    const session = await dbCommands.listSessions({
+      type: "search",
+      query,
+      user_id: userId,
+      limit: 5,
+    });
 
     return session.map((s) => ({
       id: s.id,
@@ -199,10 +226,7 @@ export default function EditorArea({
       />
 
       <div
-        className={cn([
-          "h-full overflow-y-auto",
-          enhancedContent && "pb-10",
-        ])}
+        className={cn(["h-full overflow-y-auto", enhancedContent && "pb-10"])}
         onClick={(e) => {
           const target = e.target as HTMLElement;
           if (!target.closest("a[href]")) {
@@ -211,22 +235,22 @@ export default function EditorArea({
           }
         }}
       >
-        {editable
-          ? (
-            <Editor
-              key={editorKey}
-              ref={editorRef}
-              handleChange={handleChangeNote}
-              initialContent={noteContent}
-              editable={enhance.status !== "pending"}
-              setContentFromOutside={!showRaw && enhance.status === "pending"}
-              mentionConfig={{
-                trigger: "@",
-                handleSearch: handleMentionSearch,
-              }}
-            />
-          )
-          : <Renderer ref={editorRef} initialContent={noteContent} />}
+        {editable ? (
+          <Editor
+            key={editorKey}
+            ref={editorRef}
+            handleChange={handleChangeNote}
+            initialContent={noteContent}
+            editable={enhance.status !== "pending"}
+            setContentFromOutside={!showRaw && enhance.status === "pending"}
+            mentionConfig={{
+              trigger: "@",
+              handleSearch: handleMentionSearch,
+            }}
+          />
+        ) : (
+          <Renderer ref={editorRef} initialContent={noteContent} />
+        )}
       </div>
 
       <AnimatePresence>
@@ -246,7 +270,10 @@ export default function EditorArea({
               session={sessionStore.session}
               isError={enhance.status === "error"}
               progress={progress}
-              showProgress={llmConnectionQuery.data?.type === "HyprLocal" && sessionId !== onboardingSessionId}
+              showProgress={
+                llmConnectionQuery.data?.type === "HyprLocal" &&
+                sessionId !== onboardingSessionId
+              }
             />
           </div>
         </motion.div>
@@ -293,15 +320,19 @@ export function useEnhanceMutation({
     return headers;
   }, []);
 
-  const h1Headers = useMemo(() => extractH1Headers(rawContent), [rawContent, extractH1Headers]);
+  const h1Headers = useMemo(
+    () => extractH1Headers(rawContent),
+    [rawContent, extractH1Headers]
+  );
 
   const preMeetingText = extractTextFromHtml(preMeetingNote);
   const rawText = extractTextFromHtml(rawContent);
 
-  const finalInput = diffWords(preMeetingText, rawText)
-    ?.filter(diff => diff.added && !diff.removed)
-    .map(diff => diff.value)
-    .join(" ") || "";
+  const finalInput =
+    diffWords(preMeetingText, rawText)
+      ?.filter((diff) => diff.added && !diff.removed)
+      .map((diff) => diff.value)
+      .join(" ") || "";
 
   const setEnhanceController = useOngoingSession((s) => s.setEnhanceController);
   const { persistSession, setEnhancedContent } = useSession(sessionId, (s) => ({
@@ -311,20 +342,25 @@ export function useEnhanceMutation({
 
   const enhance = useMutation({
     mutationKey: ["enhance", sessionId],
-    mutationFn: async ({
-      triggerType,
-      templateId,
-    }: {
-      triggerType: "manual" | "template" | "auto";
-      templateId?: string | null;
-    } = { triggerType: "manual" }) => {
+    mutationFn: async (
+      {
+        triggerType,
+        templateId,
+      }: {
+        triggerType: "manual" | "template" | "auto";
+        templateId?: string | null;
+      } = { triggerType: "manual" }
+    ) => {
       const abortController = new AbortController();
       setEnhanceController(abortController);
 
       await queryClient.invalidateQueries({ queryKey: ["llm-connection"] });
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const getWordsFunc = sessionId === onboardingSessionId ? dbCommands.getWordsOnboarding : dbCommands.getWords;
+      const getWordsFunc =
+        sessionId === onboardingSessionId
+          ? dbCommands.getWordsOnboarding
+          : dbCommands.getWords;
       const [{ type }, config, words] = await Promise.all([
         connectorCommands.getLlmConnection(),
         dbCommands.getConfig(),
@@ -350,45 +386,47 @@ export function useEnhanceMutation({
         return;
       }
 
-      const effectiveTemplateId = templateId !== undefined
-        ? templateId
-        : config.general?.selected_template_id;
+      const effectiveTemplateId =
+        templateId !== undefined
+          ? templateId
+          : config.general?.selected_template_id;
 
-      const selectedTemplate = await TemplateService.getTemplate(effectiveTemplateId ?? "");
+      const selectedTemplate = await TemplateService.getTemplate(
+        effectiveTemplateId ?? ""
+      );
 
       const shouldUseH1Headers = !effectiveTemplateId && h1Headers.length > 0;
-      const grammarSections = selectedTemplate?.sections.map(s => s.title) || null;
+      const grammarSections =
+        selectedTemplate?.sections.map((s) => s.title) || null;
 
       const participants = await dbCommands.sessionListParticipants(sessionId);
 
-      const systemMessage = await templateCommands.render(
-        "enhance.system",
-        {
-          config,
-          type,
-          // Pass userHeaders when using H1 headers, templateInfo otherwise
-          ...(shouldUseH1Headers
-            ? { userHeaders: h1Headers }
-            : { templateInfo: selectedTemplate }),
-        },
-      );
+      const systemMessage = await templateCommands.render("enhance.system", {
+        config,
+        type,
+        // Pass userHeaders when using H1 headers, templateInfo otherwise
+        ...(shouldUseH1Headers
+          ? { userHeaders: h1Headers }
+          : { templateInfo: selectedTemplate }),
+      });
 
-      const userMessage = await templateCommands.render(
-        "enhance.user",
-        {
-          type,
-          editor: finalInput,
-          words: JSON.stringify(words),
-          participants,
-        },
-      );
+      const userMessage = await templateCommands.render("enhance.user", {
+        type,
+        editor: finalInput,
+        words: JSON.stringify(words),
+        participants,
+      });
 
-      const abortSignal = AbortSignal.any([abortController.signal, AbortSignal.timeout(120 * 1000)]);
+      const abortSignal = AbortSignal.any([
+        abortController.signal,
+        AbortSignal.timeout(120 * 1000),
+      ]);
 
       const provider = await modelProvider();
-      const model = sessionId === onboardingSessionId
-        ? provider.languageModel("onboardingModel")
-        : provider.languageModel("defaultModel");
+      const model =
+        sessionId === onboardingSessionId
+          ? provider.languageModel("onboardingModel")
+          : provider.languageModel("defaultModel");
 
       if (sessionId !== onboardingSessionId) {
         analyticsCommands.event({
@@ -404,7 +442,12 @@ export function useEnhanceMutation({
         model,
         ...(freshIsLocalLlm && {
           tools: {
-            update_progress: tool({ parameters: z.any() }),
+            update_progress: {
+              description: "Update progress",
+              parameters: z.object({
+                progress: z.number().optional(),
+              }),
+            },
           },
         }),
         onError: (error) => {
@@ -435,10 +478,10 @@ export function useEnhanceMutation({
       let acc = "";
       for await (const chunk of fullStream) {
         if (chunk.type === "text-delta") {
-          acc += chunk.textDelta;
+          acc += chunk.text;
         }
         if (chunk.type === "tool-call" && freshIsLocalLlm) {
-          const chunkProgress = chunk.args?.progress ?? 0;
+          const chunkProgress = (chunk.input as any)?.progress ?? 0;
           setProgress(chunkProgress);
         }
 
@@ -452,9 +495,10 @@ export function useEnhanceMutation({
       onSuccess(enhancedContent ?? "");
 
       analyticsCommands.event({
-        event: sessionId === onboardingSessionId
-          ? "onboarding_enhance_done"
-          : "normal_enhance_done",
+        event:
+          sessionId === onboardingSessionId
+            ? "onboarding_enhance_done"
+            : "normal_enhance_done",
         distinct_id: userId,
         session_id: sessionId,
       });
@@ -491,19 +535,24 @@ function useAutoEnhance({
 }: {
   sessionId: string;
   enhanceStatus: string;
-  enhanceMutate: (params: { triggerType: "auto"; templateId?: string | null }) => void;
+  enhanceMutate: (params: {
+    triggerType: "auto";
+    templateId?: string | null;
+  }) => void;
 }) {
   const ongoingSessionStatus = useOngoingSession((s) => s.status);
   const autoEnhanceTemplate = useOngoingSession((s) => s.autoEnhanceTemplate);
-  const setAutoEnhanceTemplate = useOngoingSession((s) => s.setAutoEnhanceTemplate);
+  const setAutoEnhanceTemplate = useOngoingSession(
+    (s) => s.setAutoEnhanceTemplate
+  );
   const prevOngoingSessionStatus = usePreviousValue(ongoingSessionStatus);
   const setShowRaw = useSession(sessionId, (s) => s.setShowRaw);
 
   useEffect(() => {
     if (
-      prevOngoingSessionStatus === "running_active"
-      && ongoingSessionStatus === "inactive"
-      && enhanceStatus !== "pending"
+      prevOngoingSessionStatus === "running_active" &&
+      ongoingSessionStatus === "inactive" &&
+      enhanceStatus !== "pending"
     ) {
       setShowRaw(false);
 
