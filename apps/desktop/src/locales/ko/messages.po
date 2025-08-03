@@ -254,9 +254,9 @@ msgstr ""
 
 #: src/components/settings/views/notifications.tsx:132
 msgid "(Beta) Upcoming meeting notifications"
-msgstr ""
+msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:518
+#: src/components/settings/components/ai/llm-custom-view.tsx:601
 msgid "(Optional for localhost)"
 msgstr ""
 
@@ -318,9 +318,9 @@ msgstr ""
 #: src/components/welcome-modal/audio-permissions-view.tsx:58
 #: src/components/settings/views/sound.tsx:44
 msgid "Access Granted"
-msgstr ""
+msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:383
+#: src/components/settings/components/ai/llm-custom-view.tsx:466
 msgid "Access multiple AI models through OpenRouter with your API key"
 msgstr ""
 
@@ -384,17 +384,17 @@ msgstr ""
 
 #: src/components/share-and-permission/publish.tsx:18
 msgid "Anyone with the link can view this page"
-msgstr ""
+msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:493
+#: src/components/settings/components/ai/llm-custom-view.tsx:576
 msgid "API Base URL"
 msgstr ""
 
 #: src/components/settings/views/integrations.tsx:197
-#: src/components/settings/components/ai/llm-custom-view.tsx:201
-#: src/components/settings/components/ai/llm-custom-view.tsx:297
-#: src/components/settings/components/ai/llm-custom-view.tsx:403
-#: src/components/settings/components/ai/llm-custom-view.tsx:515
+#: src/components/settings/components/ai/llm-custom-view.tsx:284
+#: src/components/settings/components/ai/llm-custom-view.tsx:380
+#: src/components/settings/components/ai/llm-custom-view.tsx:486
+#: src/components/settings/components/ai/llm-custom-view.tsx:598
 msgid "API Key"
 msgstr ""
 
@@ -423,7 +423,7 @@ msgstr ""
 #~ msgid "Auto (Default)"
 #~ msgstr ""
 
-#: src/components/settings/views/ai.tsx:826
+#: src/components/settings/views/ai.tsx:827
 msgid "Autonomy Selector"
 msgstr ""
 
@@ -530,9 +530,9 @@ msgstr ""
 
 #: src/components/settings/components/calendar/cloud-calendar-integration-details.tsx:63
 #~ msgid "Connect"
-#~ msgstr ""
+#~ msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:473
+#: src/components/settings/components/ai/llm-custom-view.tsx:556
 msgid "Connect to a self-hosted or third-party LLM endpoint (OpenAI API compatible)"
 msgstr ""
 
@@ -579,7 +579,7 @@ msgstr ""
 #~ msgid "Continue Setup"
 #~ msgstr ""
 
-#: src/components/settings/views/ai.tsx:829
+#: src/components/settings/views/ai.tsx:830
 msgid "Control how autonomous the AI enhancement should be"
 msgstr ""
 
@@ -622,9 +622,9 @@ msgstr ""
 
 #: src/components/settings/views/ai.tsx:747
 #~ msgid "Custom Endpoint"
-#~ msgstr ""
+#~ msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:150
+#: src/components/settings/components/ai/llm-custom-view.tsx:233
 msgid "Custom Endpoints"
 msgstr ""
 
@@ -716,9 +716,9 @@ msgstr ""
 
 #: src/components/settings/components/ai/llm-custom-view.tsx:519
 #~ msgid "Enter the API key for your custom LLM endpoint"
-#~ msgstr ""
+#~ msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:496
+#: src/components/settings/components/ai/llm-custom-view.tsx:579
 msgid "Enter the base URL for your custom LLM endpoint"
 msgstr ""
 
@@ -793,9 +793,9 @@ msgstr ""
 
 #: src/components/welcome-modal/welcome-view.tsx:36
 msgid "Get Started"
-msgstr ""
+msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:273
+#: src/components/settings/components/ai/llm-custom-view.tsx:356
 msgid "Google Gemini"
 msgstr ""
 
@@ -872,7 +872,7 @@ msgstr ""
 msgid "Job title"
 msgstr ""
 
-#: src/components/editor-area/note-header/chips/event-chip.tsx:185
+#: src/components/editor-area/note-header/chips/event-chip.tsx:191
 msgid "Join meeting"
 msgstr ""
 
@@ -904,19 +904,19 @@ msgstr ""
 #~ msgid "Live summary of the meeting"
 #~ msgstr ""
 
-#: src/components/settings/views/ai.tsx:803
+#: src/components/settings/views/ai.tsx:804
 msgid "LLM - Custom"
 msgstr ""
 
-#: src/components/settings/views/ai.tsx:800
+#: src/components/settings/views/ai.tsx:801
 msgid "LLM - Local"
-msgstr ""
+msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:552
+#: src/components/settings/components/ai/llm-custom-view.tsx:635
 msgid "Loading available models..."
 msgstr ""
 
-#: src/components/editor-area/note-header/chips/event-chip.tsx:401
+#: src/components/editor-area/note-header/chips/event-chip.tsx:407
 msgid "Loading events..."
 msgstr ""
 
@@ -960,15 +960,15 @@ msgstr ""
 #: src/components/welcome-modal/audio-permissions-view.tsx:165
 #: src/components/settings/views/sound.tsx:127
 msgid "Microphone Access"
-msgstr ""
+msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:221
-#: src/components/settings/components/ai/llm-custom-view.tsx:317
-#: src/components/settings/components/ai/llm-custom-view.tsx:423
+#: src/components/settings/components/ai/llm-custom-view.tsx:304
+#: src/components/settings/components/ai/llm-custom-view.tsx:400
+#: src/components/settings/components/ai/llm-custom-view.tsx:506
 msgid "Model"
 msgstr ""
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:540
+#: src/components/settings/components/ai/llm-custom-view.tsx:623
 msgid "Model Name"
 msgstr ""
 
@@ -1017,7 +1017,7 @@ msgstr ""
 #~ msgid "No models available for this endpoint."
 #~ msgstr ""
 
-#: src/components/editor-area/note-header/chips/event-chip.tsx:409
+#: src/components/editor-area/note-header/chips/event-chip.tsx:415
 msgid "No past events found."
 msgstr ""
 
@@ -1090,13 +1090,13 @@ msgstr ""
 #: src/components/workspace-calendar/note-card.tsx:123
 #: src/components/workspace-calendar/event-card.tsx:153
 #~ msgid "Open Note"
-#~ msgstr ""
+#~ msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:177
+#: src/components/settings/components/ai/llm-custom-view.tsx:260
 msgid "OpenAI"
 msgstr ""
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:379
+#: src/components/settings/components/ai/llm-custom-view.tsx:462
 msgid "OpenRouter"
 msgstr ""
 
@@ -1106,9 +1106,9 @@ msgstr ""
 
 #: src/components/settings/components/calendar/apple-calendar-integration-details.tsx:114
 msgid "Optional for participant suggestions"
-msgstr ""
+msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:470
+#: src/components/settings/components/ai/llm-custom-view.tsx:553
 msgid "Others"
 msgstr ""
 
@@ -1204,7 +1204,7 @@ msgstr ""
 #~ msgid "Save and close"
 #~ msgstr ""
 
-#: src/components/editor-area/note-header/chips/event-chip.tsx:527
+#: src/components/editor-area/note-header/chips/event-chip.tsx:533
 msgid "Save Date"
 msgstr ""
 
@@ -1212,7 +1212,7 @@ msgstr ""
 msgid "Save recordings"
 msgstr ""
 
-#: src/components/editor-area/note-header/chips/event-chip.tsx:527
+#: src/components/editor-area/note-header/chips/event-chip.tsx:533
 msgid "Saving..."
 msgstr ""
 
@@ -1239,9 +1239,9 @@ msgstr ""
 
 #: src/components/settings/views/template.tsx:240
 msgid "Sections"
-msgstr ""
+msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:543
+#: src/components/settings/components/ai/llm-custom-view.tsx:626
 msgid "Select a model from the dropdown (if available) or manually enter the model name required by your endpoint."
 msgstr ""
 
@@ -1394,7 +1394,7 @@ msgstr ""
 msgid "Today"
 msgstr ""
 
-#: src/components/toolbar/buttons/chat-panel-button.tsx:67
+#: src/components/toolbar/buttons/chat-panel-button.tsx:49
 msgid "Toggle chat panel"
 msgstr ""
 
@@ -1410,7 +1410,7 @@ msgstr ""
 msgid "Transcribing"
 msgstr ""
 
-#: src/components/settings/views/ai.tsx:797
+#: src/components/settings/views/ai.tsx:798
 msgid "Transcription"
 msgstr ""
 
@@ -1448,13 +1448,13 @@ msgstr ""
 
 #: src/components/settings/views/billing.tsx:69
 #~ msgid "Upgrade"
-#~ msgstr ""
+#~ msgstr "<<<<<<< HEAD"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:277
+#: src/components/settings/components/ai/llm-custom-view.tsx:360
 msgid "Use Google's Gemini models with your API key"
 msgstr ""
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:181
+#: src/components/settings/components/ai/llm-custom-view.tsx:264
 msgid "Use OpenAI's GPT models with your API key"
 msgstr ""
 
@@ -1483,7 +1483,7 @@ msgid "View calendar"
 msgstr ""
 
 #: src/components/left-sidebar/events-list.tsx:193
-#: src/components/editor-area/note-header/chips/event-chip.tsx:195
+#: src/components/editor-area/note-header/chips/event-chip.tsx:201
 msgid "View in calendar"
 msgstr ""
 

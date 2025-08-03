@@ -81,7 +81,7 @@ const customSchema = z.object({
       }
       return true;
     },
-    { message: "Should end with '/v1'" },
+    { message: "Unless you are using a local endpoint, it should end with '/v1'" },
   ).refine(
     (value) => !value.includes("chat/completions"),
     { message: "`/chat/completions` will be appended automatically" },
@@ -318,12 +318,15 @@ export default function LocalAI() {
     queryFn: () => connectorCommands.getCustomLlmModel(),
   });
 
+  /*
   const availableLLMModels = useQuery({
     queryKey: ["available-llm-models"],
     queryFn: async () => {
+      console.log("available models being loaded");
       return await connectorCommands.listCustomLlmModels();
     },
   });
+  */
 
   const modelDownloadStatus = useQuery({
     queryKey: ["llm-model-download-status"],
@@ -566,9 +569,7 @@ export default function LocalAI() {
       setOpenrouterModelMutation.mutate(config.model);
     } else if (config.provider === "others") {
       setOthersApiBaseMutation.mutate(config.api_base);
-      if (config.api_key) {
-        setOthersApiKeyMutation.mutate(config.api_key);
-      }
+      setOthersApiKeyMutation.mutate(config.api_key || "");
       setOthersModelMutation.mutate(config.model);
     }
 
@@ -776,7 +777,7 @@ export default function LocalAI() {
     setOpenAccordion,
     customLLMConnection,
     getCustomLLMModel,
-    availableLLMModels,
+    // availableLLMModels,
     openaiForm,
     geminiForm,
     openrouterForm,

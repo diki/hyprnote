@@ -12,13 +12,13 @@ resolver = "2"
 members = [
   "apps/app/server",
   "apps/desktop/src-tauri",
-  "apps/restate",
+  "apps/proxy",
   "crates/*",
   "plugins/*",
 ]
 
 [workspace.package]
-rust-version = "1.86.0"
+rust-version = "1.88.0"
 
 [workspace.dependencies]
 hypr-aec = { path = "crates/aec", package = "aec" }
@@ -52,6 +52,7 @@ hypr-notification2 = { path = "crates/notification2", package = "notification2" 
 hypr-notion = { path = "crates/notion", package = "notion" }
 hypr-onnx = { path = "crates/onnx", package = "onnx" }
 hypr-openai = { path = "crates/openai", package = "openai" }
+hypr-proxy = { path = "apps/proxy", package = "proxy" }
 hypr-pyannote-cloud = { path = "crates/pyannote-cloud", package = "pyannote-cloud" }
 hypr-pyannote-local = { path = "crates/pyannote-local", package = "pyannote-local" }
 hypr-rtzr = { path = "crates/rtzr", package = "rtzr" }
@@ -60,6 +61,9 @@ hypr-slack = { path = "crates/slack", package = "slack" }
 hypr-stt = { path = "crates/stt", package = "stt", features = ["realtime", "recorded"] }
 hypr-tcc = { path = "crates/tcc", package = "tcc" }
 hypr-template = { path = "crates/template", package = "template" }
+hypr-transcribe-aws = { path = "crates/transcribe-aws", package = "transcribe-aws" }
+hypr-transcribe-azure = { path = "crates/transcribe-azure", package = "transcribe-azure" }
+hypr-transcribe-gcp = { path = "crates/transcribe-gcp", package = "transcribe-gcp" }
 hypr-turso = { path = "crates/turso", package = "turso" }
 hypr-whisper = { path = "crates/whisper", package = "whisper" }
 hypr-whisper-cloud = { path = "crates/whisper-cloud", package = "whisper-cloud" }
