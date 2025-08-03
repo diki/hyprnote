@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "prebuild": "pnpm --filter @hypr/ui build",
-    "build": "tsc && vite build",
+    "build": "pnpm lingui:compile && tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "lingui:extract": "lingui extract",

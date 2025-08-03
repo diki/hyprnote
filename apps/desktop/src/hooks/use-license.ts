@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as keygen from "tauri-plugin-keygen-api";
+// import type { KeygenLicense } from "tauri-plugin-keygen-api";
 
 const LICENSE_QUERY_KEY = ["license"] as const;
 
@@ -10,6 +11,24 @@ export function useLicense() {
   const getLicense = useQuery({
     queryKey: LICENSE_QUERY_KEY,
     queryFn: async () => {
+      // Check for SKIP_LICENSE environment variable
+      if (import.meta.env.VITE_SKIP_LICENSE === "true") {
+        // Return a mock valid license
+        const mockLicense: keygen.KeygenLicense = {
+          key: "mock-license-key",
+          code: "MOCK_LICENSE",
+          detail: "Mock license for development",
+          expiry: new Date(
+            Date.now() + 365 * 24 * 60 * 60 * 1000
+          ).toISOString(), // 1 year from now
+          valid: true,
+          policyId: "mock-policy-id",
+          entitlements: [],
+          metadata: {},
+        };
+        return mockLicense;
+      }
+
       const license = await keygen.getLicense();
       if (license?.valid) {
         return license;
@@ -57,7 +76,7 @@ export function useLicense() {
     }
 
     const daysUntilExpiry = Math.floor(
-      (new Date(license.expiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+      (new Date(license.expiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
     );
 
     return daysUntilExpiry <= 3 && daysUntilExpiry > 0;
@@ -81,10 +100,7 @@ export function useLicense() {
 
   const deactivateLicense = useMutation({
     mutationFn: async () => {
-      await Promise.all([
-        keygen.resetLicense(),
-        keygen.resetLicenseKey(),
-      ]);
+      await Promise.all([keygen.resetLicense(), keygen.resetLicenseKey()]);
       return null;
     },
     onError: console.error,

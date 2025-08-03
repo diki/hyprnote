@@ -77,16 +77,20 @@ export function useChatLogic({
   const prepareMessageHistory = async (
     messages: Message[],
     currentUserMessage?: string,
-    mentionedContent?: Array<{ id: string; type: string; label: string }>,
+    mentionedContent?: Array<{ id: string; type: string; label: string }>
   ) => {
     const refetchResult = await sessionData.refetch();
     let freshSessionData = refetchResult.data;
 
     const { type } = await connectorCommands.getLlmConnection();
 
-    const participants = sessionId ? await dbCommands.sessionListParticipants(sessionId) : [];
+    const participants = sessionId
+      ? await dbCommands.sessionListParticipants(sessionId)
+      : [];
 
-    const calendarEvent = sessionId ? await dbCommands.sessionGetEvent(sessionId) : null;
+    const calendarEvent = sessionId
+      ? await dbCommands.sessionGetEvent(sessionId)
+      : null;
 
     const currentDateTime = new Date().toLocaleString("en-US", {
       year: "numeric",
@@ -98,9 +102,9 @@ export function useChatLogic({
     });
 
     const eventInfo = calendarEvent
-      ? `${calendarEvent.name} (${calendarEvent.start_date} - ${calendarEvent.end_date})${
-        calendarEvent.note ? ` - ${calendarEvent.note}` : ""
-      }`
+      ? `${calendarEvent.name} (${calendarEvent.start_date} - ${
+          calendarEvent.end_date
+        })${calendarEvent.note ? ` - ${calendarEvent.note}` : ""}`
       : "";
 
     const systemContent = await templateCommands.render("ai_chat.system", {
@@ -119,11 +123,9 @@ export function useChatLogic({
     const conversationHistory: Array<{
       role: "system" | "user" | "assistant";
       content: string;
-    }> = [
-      { role: "system" as const, content: systemContent },
-    ];
+    }> = [{ role: "system" as const, content: systemContent }];
 
-    messages.forEach(message => {
+    messages.forEach((message) => {
       conversationHistory.push({
         role: message.isUser ? ("user" as const) : ("assistant" as const),
         content: message.content,
@@ -132,8 +134,8 @@ export function useChatLogic({
 
     if (mentionedContent && mentionedContent.length > 0) {
       currentUserMessage +=
-        "[[From here is an automatically appended content from the mentioned notes & people, not what the user wrote. Use this only as a reference for more context. Your focus should always be the current meeting user is viewing]]"
-        + "\n\n";
+        "[[From here is an automatically appended content from the mentioned notes & people, not what the user wrote. Use this only as a reference for more context. Your focus should always be the current meeting user is viewing]]" +
+        "\n\n";
     }
 
     if (mentionedContent && mentionedContent.length > 0) {
@@ -147,15 +149,23 @@ export function useChatLogic({
             if (sessionData) {
               let noteContent = "";
 
-              if (sessionData.enhanced_memo_html && sessionData.enhanced_memo_html.trim() !== "") {
+              if (
+                sessionData.enhanced_memo_html &&
+                sessionData.enhanced_memo_html.trim() !== ""
+              ) {
                 noteContent = sessionData.enhanced_memo_html;
-              } else if (sessionData.raw_memo_html && sessionData.raw_memo_html.trim() !== "") {
+              } else if (
+                sessionData.raw_memo_html &&
+                sessionData.raw_memo_html.trim() !== ""
+              ) {
                 noteContent = sessionData.raw_memo_html;
               } else {
                 continue;
               }
 
-              noteContents.push(`\n\n--- Content from the note"${mention.label}" ---\n${noteContent}`);
+              noteContents.push(
+                `\n\n--- Content from the note"${mention.label}" ---\n${noteContent}`
+              );
             }
           }
 
@@ -181,38 +191,65 @@ export function useChatLogic({
                   humanContent += "\nNotes this person participated in:\n";
 
                   for (const session of participantSessions.slice(0, 2)) {
-                    const participants = await dbCommands.sessionListParticipants(session.id);
-                    const isParticipant = participants.some(p =>
-                      p.full_name === humanData.full_name || p.email === humanData.email
+                    const participants =
+                      await dbCommands.sessionListParticipants(session.id);
+                    const isParticipant = participants.some(
+                      (p) =>
+                        p.full_name === humanData.full_name ||
+                        p.email === humanData.email
                     );
 
                     if (isParticipant) {
                       let briefContent = "";
-                      if (session.enhanced_memo_html && session.enhanced_memo_html.trim() !== "") {
+                      if (
+                        session.enhanced_memo_html &&
+                        session.enhanced_memo_html.trim() !== ""
+                      ) {
                         const div = document.createElement("div");
                         div.innerHTML = session.enhanced_memo_html;
-                        briefContent = (div.textContent || div.innerText || "").slice(0, 200) + "...";
-                      } else if (session.raw_memo_html && session.raw_memo_html.trim() !== "") {
+                        briefContent =
+                          (div.textContent || div.innerText || "").slice(
+                            0,
+                            200
+                          ) + "...";
+                      } else if (
+                        session.raw_memo_html &&
+                        session.raw_memo_html.trim() !== ""
+                      ) {
                         const div = document.createElement("div");
                         div.innerHTML = session.raw_memo_html;
-                        briefContent = (div.textContent || div.innerText || "").slice(0, 200) + "...";
+                        briefContent =
+                          (div.textContent || div.innerText || "").slice(
+                            0,
+                            200
+                          ) + "...";
                       }
 
-                      humanContent += `- "${session.title || "Untitled"}": ${briefContent}\n`;
+                      humanContent += `- "${
+                        session.title || "Untitled"
+                      }": ${briefContent}\n`;
                     }
                   }
                 }
               } catch (error) {
-                console.error(`Error fetching notes for person "${humanData.full_name}":`, error);
+                console.error(
+                  `Error fetching notes for person "${humanData.full_name}":`,
+                  error
+                );
               }
             }
 
             if (humanData) {
-              noteContents.push(`\n\n--- Content about the person "${mention.label}" ---\n${humanContent}`);
+              noteContents.push(
+                `\n\n--- Content about the person "${mention.label}" ---\n${humanContent}`
+              );
             }
           }
         } catch (error) {
-          console.error(`Error fetching content for "${mention.label}":`, error);
+          console.error(
+            `Error fetching content for "${mention.label}":`,
+            error
+          );
         }
       }
 
@@ -234,18 +271,23 @@ export function useChatLogic({
   const processUserMessage = async (
     content: string,
     analyticsEvent: string,
-    mentionedContent?: Array<{ id: string; type: string; label: string }>,
+    mentionedContent?: Array<{ id: string; type: string; label: string }>
   ) => {
     if (!content.trim() || isGenerating) {
       return;
     }
 
     if (messages.length >= 14 && !getLicense.data?.valid) {
+      // Fire and forget analytics - don't block chat functionality
       if (userId) {
-        await analyticsCommands.event({
-          event: "pro_license_required_chat",
-          distinct_id: userId,
-        });
+        analyticsCommands
+          .event({
+            event: "pro_license_required_chat",
+            distinct_id: userId,
+          })
+          .catch((error) => {
+            console.error("Analytics error (non-blocking):", error);
+          });
       }
       await message("7 messages are allowed per conversation for free users.", {
         title: "Pro License Required",
@@ -254,11 +296,16 @@ export function useChatLogic({
       return;
     }
 
+    // Fire and forget analytics - don't block chat functionality
     if (userId) {
-      await analyticsCommands.event({
-        event: analyticsEvent,
-        distinct_id: userId,
-      });
+      analyticsCommands
+        .event({
+          event: analyticsEvent,
+          distinct_id: userId,
+        })
+        .catch((error) => {
+          console.error("Analytics error (non-blocking):", error);
+        });
     }
 
     if (!hasChatStarted && activeEntity) {
@@ -303,13 +350,17 @@ export function useChatLogic({
       setMessages((prev) => [...prev, aiMessage]);
 
       await queryClient.invalidateQueries({ queryKey: ["llm-connection"] });
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const { type } = await connectorCommands.getLlmConnection();
 
       const { textStream } = streamText({
         model,
-        messages: await prepareMessageHistory(messages, content, mentionedContent),
+        messages: await prepareMessageHistory(
+          messages,
+          content,
+          mentionedContent
+        ),
         ...(type === "HyprLocal" && {
           tools: {
             update_progress: tool({ inputSchema: z.any() }),
@@ -331,13 +382,13 @@ export function useChatLogic({
         const parts = parseMarkdownBlocks(aiResponse);
 
         setMessages((prev) =>
-          prev.map(msg =>
+          prev.map((msg) =>
             msg.id === aiMessageId
               ? {
-                ...msg,
-                content: aiResponse,
-                parts: parts,
-              }
+                  ...msg,
+                  content: aiResponse,
+                  parts: parts,
+                }
               : msg
           )
         );
@@ -361,21 +412,25 @@ export function useChatLogic({
 
       if (String(errorMessage).includes("too large")) {
         finalErrorMesage =
-          "Sorry, I encountered an error. Please try again. Your transcript or meeting notes might be too large. Please try again with a smaller transcript or meeting notes."
-          + "\n\n" + errorMessage;
+          "Sorry, I encountered an error. Please try again. Your transcript or meeting notes might be too large. Please try again with a smaller transcript or meeting notes." +
+          "\n\n" +
+          errorMessage;
       } else {
-        finalErrorMesage = "Sorry, I encountered an error. Please try again. " + "\n\n" + errorMessage;
+        finalErrorMesage =
+          "Sorry, I encountered an error. Please try again. " +
+          "\n\n" +
+          errorMessage;
       }
 
       setIsGenerating(false);
 
       setMessages((prev) =>
-        prev.map(msg =>
+        prev.map((msg) =>
           msg.id === aiMessageId
             ? {
-              ...msg,
-              content: finalErrorMesage,
-            }
+                ...msg,
+                content: finalErrorMesage,
+              }
             : msg
         )
       );
@@ -390,7 +445,9 @@ export function useChatLogic({
     }
   };
 
-  const handleSubmit = async (mentionedContent?: Array<{ id: string; type: string; label: string }>) => {
+  const handleSubmit = async (
+    mentionedContent?: Array<{ id: string; type: string; label: string }>
+  ) => {
     await processUserMessage(inputValue, "chat_message_sent", mentionedContent);
   };
 
