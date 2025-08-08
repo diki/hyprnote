@@ -1,9 +1,6 @@
 use futures_util::{Stream, StreamExt};
 
-use hypr_audio::AsyncSource;
-use hypr_audio_utils::AudioFormatExt;
 use hypr_ws::client::{ClientRequestBuilder, Message, WebSocketClient, WebSocketIO};
-
 use owhisper_interface::{ListenInputChunk, ListenOutputChunk};
 
 #[derive(Default)]
@@ -49,8 +46,8 @@ impl ListenClientBuilder {
         {
             let mut query_pairs = url.query_pairs_mut();
 
-            for lang in &params.languages {
-                query_pairs.append_pair("languages", lang.iso639().code());
+            for (i, lang) in params.languages.iter().enumerate() {
+                query_pairs.append_pair(&format!("languages[{}]", i), lang.iso639().code());
             }
             query_pairs
                 // https://developers.deepgram.com/reference/speech-to-text-api/listen-streaming#handshake
@@ -74,11 +71,8 @@ impl ListenClientBuilder {
         url.to_string()
     }
 
-    fn build_request(self) -> ClientRequestBuilder {
-        let uri = self
-            .build_uri(owhisper_interface::AudioMode::Single)
-            .parse()
-            .unwrap();
+    fn build_request(self, audio_mode: owhisper_interface::AudioMode) -> ClientRequestBuilder {
+        let uri = self.build_uri(audio_mode).parse().unwrap();
 
         let request = match self.api_key {
             // https://github.com/deepgram/deepgram-rust-sdk/blob/d2f2723/src/lib.rs#L114-L115
@@ -92,12 +86,12 @@ impl ListenClientBuilder {
     }
 
     pub fn build_single(self) -> ListenClient {
-        let request = self.build_request();
+        let request = self.build_request(owhisper_interface::AudioMode::Single);
         ListenClient { request }
     }
 
     pub fn build_dual(self) -> ListenClientDual {
-        let request = self.build_request();
+        let request = self.build_request(owhisper_interface::AudioMode::Dual);
         ListenClientDual { request }
     }
 }
@@ -166,11 +160,10 @@ impl ListenClient {
 
     pub async fn from_realtime_audio(
         &self,
-        audio_stream: impl AsyncSource + Send + Unpin + 'static,
+        audio_stream: impl Stream<Item = bytes::Bytes> + Send + Unpin + 'static,
     ) -> Result<impl Stream<Item = ListenOutputChunk>, hypr_ws::Error> {
-        let input_stream = audio_stream.to_i16_le_chunks(16 * 1000, 1024);
         let ws = WebSocketClient::new(self.request.clone());
-        ws.from_audio::<Self>(input_stream).await
+        ws.from_audio::<Self>(audio_stream).await
     }
 }
 
@@ -189,7 +182,9 @@ impl ListenClientDual {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use futures_util::StreamExt;
+    use hypr_audio_utils::AudioFormatExt;
 
     #[tokio::test]
     #[ignore]
@@ -197,7 +192,8 @@ mod tests {
         let audio = rodio::Decoder::new(std::io::BufReader::new(
             std::fs::File::open(hypr_data::english_1::AUDIO_PATH).unwrap(),
         ))
-        .unwrap();
+        .unwrap()
+        .to_i16_le_chunks(16000, 512);
 
         let client = ListenClient::builder()
             .api_base("https://api.deepgram.com")
@@ -222,7 +218,8 @@ mod tests {
         let audio = rodio::Decoder::new(std::io::BufReader::new(
             std::fs::File::open(hypr_data::english_1::AUDIO_PATH).unwrap(),
         ))
-        .unwrap();
+        .unwrap()
+        .to_i16_le_chunks(16000, 512);
 
         let client = ListenClient::builder()
             .api_base("ws://127.0.0.1:1234/v1/realtime")
