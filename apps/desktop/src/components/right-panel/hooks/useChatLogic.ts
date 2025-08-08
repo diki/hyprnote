@@ -76,7 +76,8 @@ export function useChatLogic({
   const prepareMessageHistory = async (
     messages: Message[],
     currentUserMessage?: string,
-    mentionedContent?: Array<{ id: string; type: string; label: string }>
+    mentionedContent?: Array<{ id: string; type: string; label: string }>,
+    modelId?: string
   ) => {
     const refetchResult = await sessionData.refetch();
     let freshSessionData = refetchResult.data;
@@ -117,6 +118,7 @@ export function useChatLogic({
       date: currentDateTime,
       participants: participants,
       event: eventInfo,
+      modelId: modelId,
     });
 
     const conversationHistory: Array<{
@@ -358,73 +360,90 @@ export function useChatLogic({
         messages: await prepareMessageHistory(
           messages,
           content,
-          mentionedContent
+          mentionedContent,
+          model.modelId
         ),
         ...(type === "HyprLocal" && {
           tools: {
             update_progress: tool({ inputSchema: z.any() }),
           },
         }),
-        ...((type !== "HyprLocal"
-          && (model.modelId === "gpt-4.1" || model.modelId === "openai/gpt-4.1"
-            || model.modelId === "anthropic/claude-4-sonnet")) && {
-          stopWhen: stepCountIs(3),
-          tools: {
-            search_sessions_multi_keywords: tool({
-              description:
-                "Search for sessions (meeting notes) with multiple keywords. The keywords should be the most important things that the user is talking about. This could be either topics, people, or company names.",
-              inputSchema: z.object({
-                keywords: z.array(z.string()).min(3).max(5).describe(
-                  "List of 3-5 keywords to search for, each keyword should be concise",
-                ),
-              }),
-              execute: async ({ keywords }) => {
-                const searchPromises = keywords.map(keyword =>
-                  dbCommands.listSessions({
-                    type: "search",
-                    query: keyword,
-                    user_id: userId || "",
-                    limit: 3,
-                  })
-                );
+        ...(type !== "HyprLocal" &&
+          (model.modelId === "gpt-4.1" ||
+            model.modelId === "openai/gpt-4.1" ||
+            model.modelId === "anthropic/claude-4-sonnet" ||
+            model.modelId === "openai/gpt-4o" ||
+            model.modelId === "gpt-4o") && {
+            stopWhen: stepCountIs(3),
+            tools: {
+              search_sessions_multi_keywords: tool({
+                description:
+                  "Search for sessions (meeting notes) with multiple keywords. The keywords should be the most important things that the user is talking about. This could be either topics, people, or company names.",
+                inputSchema: z.object({
+                  keywords: z
+                    .array(z.string())
+                    .min(3)
+                    .max(5)
+                    .describe(
+                      "List of 3-5 keywords to search for, each keyword should be concise"
+                    ),
+                }),
+                execute: async ({ keywords }) => {
+                  const searchPromises = keywords.map((keyword) =>
+                    dbCommands.listSessions({
+                      type: "search",
+                      query: keyword,
+                      user_id: userId || "",
+                      limit: 3,
+                    })
+                  );
 
-                const searchResults = await Promise.all(searchPromises);
+                  const searchResults = await Promise.all(searchPromises);
 
-                const combinedResults = new Map();
+                  const combinedResults = new Map();
 
-                searchResults.forEach((sessions, index) => {
-                  const keyword = keywords[index];
-                  sessions.forEach(session => {
-                    if (combinedResults.has(session.id)) {
-                      combinedResults.get(session.id).matchedKeywords.push(keyword);
-                    } else {
-                      combinedResults.set(session.id, {
-                        ...session,
-                        matchedKeywords: [keyword],
-                      });
-                    }
+                  searchResults.forEach((sessions, index) => {
+                    const keyword = keywords[index];
+                    sessions.forEach((session) => {
+                      if (combinedResults.has(session.id)) {
+                        combinedResults
+                          .get(session.id)
+                          .matchedKeywords.push(keyword);
+                      } else {
+                        combinedResults.set(session.id, {
+                          ...session,
+                          matchedKeywords: [keyword],
+                        });
+                      }
+                    });
                   });
-                });
 
-                const finalResults = Array.from(combinedResults.values())
-                  .sort((a, b) => b.matchedKeywords.length - a.matchedKeywords.length);
+                  const finalResults = Array.from(
+                    combinedResults.values()
+                  ).sort(
+                    (a, b) =>
+                      b.matchedKeywords.length - a.matchedKeywords.length
+                  );
 
-                return {
-                  results: finalResults,
-                  summary: {
-                    totalSessions: finalResults.length,
-                    keywordsSearched: keywords,
-                    sessionsByKeywordCount: finalResults.reduce((acc, session) => {
-                      const count = session.matchedKeywords.length;
-                      acc[count] = (acc[count] || 0) + 1;
-                      return acc;
-                    }, {} as Record<number, number>),
-                  },
-                };
-              },
-            }),
-          },
-        }),
+                  return {
+                    results: finalResults,
+                    summary: {
+                      totalSessions: finalResults.length,
+                      keywordsSearched: keywords,
+                      sessionsByKeywordCount: finalResults.reduce(
+                        (acc, session) => {
+                          const count = session.matchedKeywords.length;
+                          acc[count] = (acc[count] || 0) + 1;
+                          return acc;
+                        },
+                        {} as Record<number, number>
+                      ),
+                    },
+                  };
+                },
+              }),
+            },
+          }),
 
         onError: (error) => {
           console.error("On Error Catch:", error);
