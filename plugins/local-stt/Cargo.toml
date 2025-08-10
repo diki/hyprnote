@@ -9,9 +9,9 @@ description = ""
 
 [features]
 default = []
-coreml = ["hypr-transcribe-whisper-local/coreml"]
-directml = ["hypr-transcribe-whisper-local/directml"]
-cuda = ["hypr-transcribe-whisper-local/cuda"]
+coreml = ["hypr-transcribe-whisper-local/coreml", "hypr-transcribe-moonshine/coreml"]
+directml = ["hypr-transcribe-whisper-local/directml", "hypr-transcribe-moonshine/directml"]
+cuda = ["hypr-transcribe-whisper-local/cuda", "hypr-transcribe-moonshine/cuda"]
 hipblas = ["hypr-transcribe-whisper-local/hipblas"]
 openblas = ["hypr-transcribe-whisper-local/openblas"]
 metal = ["hypr-transcribe-whisper-local/metal"]
@@ -40,8 +40,10 @@ tokio-tungstenite = { workspace = true }
 tower = { workspace = true }
 
 [dependencies]
+hypr-am = { workspace = true }
 hypr-audio-utils = { workspace = true }
 hypr-file = { workspace = true }
+hypr-transcribe-moonshine = { workspace = true }
 hypr-transcribe-whisper-local = { workspace = true }
 hypr-whisper-local = { workspace = true }
 hypr-whisper-local-model = { workspace = true }

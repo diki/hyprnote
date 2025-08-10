@@ -31,6 +31,7 @@ pub enum TranscriptionService {
     Aws(hypr_transcribe_aws::TranscribeService),
     Deepgram(hypr_transcribe_deepgram::TranscribeService),
     WhisperCpp(hypr_transcribe_whisper_local::TranscribeService),
+    Moonshine(hypr_transcribe_moonshine::TranscribeService),
 }
 
 pub struct Server {
@@ -43,7 +44,7 @@ impl Server {
         Self { config, port }
     }
 
-    pub async fn build_router(&self) -> anyhow::Result<Router> {
+    pub async fn build_router(&self) -> anyhow::Result<Router<()>> {
         let api_key = self.config.general.as_ref().and_then(|g| g.api_key.clone());
 
         let mut services = HashMap::new();
@@ -58,12 +59,16 @@ impl Server {
                 owhisper_config::ModelConfig::WhisperCpp(config) => {
                     TranscriptionService::WhisperCpp(build_whisper_cpp_service(config)?)
                 }
+                owhisper_config::ModelConfig::Moonshine(config) => {
+                    TranscriptionService::Moonshine(build_moonshine_service(config)?)
+                }
             };
 
             let id = match model {
                 owhisper_config::ModelConfig::Aws(c) => &c.id,
                 owhisper_config::ModelConfig::Deepgram(c) => &c.id,
                 owhisper_config::ModelConfig::WhisperCpp(c) => &c.id,
+                owhisper_config::ModelConfig::Moonshine(c) => &c.id,
             };
 
             services.insert(id.clone(), service);
@@ -72,9 +77,13 @@ impl Server {
         let app_state = Arc::new(AppState { api_key, services });
 
         let stt_router = self.build_stt_router(app_state.clone()).await;
-
-        let app = Router::new()
+        let other_router = Router::new()
             .route("/health", axum::routing::get(health))
+            .route("/models", axum::routing::get(list_models))
+            .route("/v1/models", axum::routing::get(list_models))
+            .with_state(app_state.clone());
+
+        let app = other_router
             .merge(stt_router)
             // .layer(middleware::from_fn_with_state(
             //     app_state.clone(),
@@ -96,7 +105,7 @@ impl Server {
     pub async fn run_with_shutdown(
         self,
         shutdown_signal: impl std::future::Future<Output = ()> + Send + 'static,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<u16> {
         let router = self.build_router().await?;
 
         let listener = tokio::net::TcpListener::bind(if let Some(port) = self.port {
@@ -117,10 +126,10 @@ impl Server {
             return Err(anyhow::anyhow!(e));
         }
 
-        Ok(())
+        Ok(addr.port())
     }
 
-    async fn build_stt_router(&self, app_state: Arc<AppState>) -> Router {
+    async fn build_stt_router(&self, app_state: Arc<AppState>) -> Router<()> {
         Router::new()
             .route("/listen", axum::routing::any(handle_transcription))
             .route("/v1/listen", axum::routing::any(handle_transcription))
@@ -129,19 +138,11 @@ impl Server {
 }
 
 async fn build_aws_service(
-    _config: &owhisper_config::AwsModelConfig,
+    config: &owhisper_config::AwsModelConfig,
 ) -> anyhow::Result<hypr_transcribe_aws::TranscribeService> {
-    hypr_transcribe_aws::TranscribeService::new(hypr_transcribe_aws::TranscribeConfig::default())
+    hypr_transcribe_aws::TranscribeService::new(config.clone())
         .await
         .map_err(|e| anyhow::anyhow!("Failed to create AWS service: {}", e))
-}
-
-fn build_whisper_cpp_service(
-    config: &owhisper_config::WhisperCppModelConfig,
-) -> anyhow::Result<hypr_transcribe_whisper_local::TranscribeService> {
-    Ok(hypr_transcribe_whisper_local::TranscribeService::builder()
-        .model_path(config.model_path.clone().into())
-        .build())
 }
 
 async fn build_deepgram_service(
@@ -150,6 +151,42 @@ async fn build_deepgram_service(
     hypr_transcribe_deepgram::TranscribeService::new(config.clone())
         .await
         .map_err(|e| anyhow::anyhow!("Failed to create Deepgram service: {}", e))
+}
+
+fn build_whisper_cpp_service(
+    config: &owhisper_config::WhisperCppModelConfig,
+) -> anyhow::Result<hypr_transcribe_whisper_local::TranscribeService> {
+    let mut files = std::fs::read_dir(&config.assets_dir)?;
+    let model = files
+        .find(|f| f.is_ok() && f.as_ref().unwrap().file_name() == "model.ggml")
+        .ok_or(anyhow::anyhow!("model.ggml not found"))??;
+
+    Ok(hypr_transcribe_whisper_local::TranscribeService::builder()
+        .model_path(model.path())
+        .build())
+}
+
+fn build_moonshine_service(
+    config: &owhisper_config::MoonshineModelConfig,
+) -> anyhow::Result<hypr_transcribe_moonshine::TranscribeService> {
+    let mut files = std::fs::read_dir(&config.assets_dir)?;
+
+    let tokenizer = files
+        .find(|f| f.is_ok() && f.as_ref().unwrap().file_name() == "tokenizer.json")
+        .ok_or(anyhow::anyhow!("tokenizer.json not found"))??;
+    let encoder = files
+        .find(|f| f.is_ok() && f.as_ref().unwrap().file_name() == "encoder_model.onnx")
+        .ok_or(anyhow::anyhow!("encoder_model.onnx not found"))??;
+    let decoder = files
+        .find(|f| f.is_ok() && f.as_ref().unwrap().file_name() == "decoder_model_merged.onnx")
+        .ok_or(anyhow::anyhow!("decoder_model_merged.onnx not found"))??;
+
+    Ok(hypr_transcribe_moonshine::TranscribeService::builder()
+        .model_size(config.size.clone())
+        .tokenizer_path(tokenizer.path().to_str().unwrap().to_string())
+        .encoder_path(encoder.path().to_str().unwrap().to_string())
+        .decoder_path(decoder.path().to_str().unwrap().to_string())
+        .build())
 }
 
 async fn handle_transcription(
@@ -167,10 +204,10 @@ async fn handle_transcription(
             .clone(),
     };
 
-    let service = state
-        .services
-        .get(&model_id)
-        .ok_or((StatusCode::NOT_FOUND, "no_model_match".to_string()))?;
+    let service = state.services.get(&model_id).ok_or((
+        StatusCode::NOT_FOUND,
+        format!("no_model_match: {}", model_id),
+    ))?;
 
     match service {
         TranscriptionService::Aws(svc) => {
@@ -200,11 +237,48 @@ async fn handle_transcription(
                 )
             })
         }
+        TranscriptionService::Moonshine(svc) => {
+            let mut svc_clone = svc.clone();
+            svc_clone.call(req).await.map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "moonshine_server_error".to_string(),
+                )
+            })
+        }
     }
 }
 
 async fn health() -> &'static str {
     "OK"
+}
+
+#[derive(serde::Serialize)]
+struct ModelInfo {
+    id: String,
+    object: String,
+}
+
+#[derive(serde::Serialize)]
+struct ModelsResponse {
+    object: String,
+    data: Vec<ModelInfo>,
+}
+
+async fn list_models(State(state): State<Arc<AppState>>) -> axum::Json<ModelsResponse> {
+    let models: Vec<ModelInfo> = state
+        .services
+        .keys()
+        .map(|id| ModelInfo {
+            id: id.clone(),
+            object: "model".to_string(),
+        })
+        .collect();
+
+    axum::Json(ModelsResponse {
+        object: "list".to_string(),
+        data: models,
+    })
 }
 
 async fn auth_middleware(
@@ -287,7 +361,7 @@ mod tests {
                 models: vec![owhisper_config::ModelConfig::WhisperCpp(
                     owhisper_config::WhisperCppModelConfig {
                         id: "whisper_cpp".to_string(),
-                        model_path: dirs::data_dir()
+                        assets_dir: dirs::data_dir()
                             .unwrap()
                             .join("com.hyprnote.dev/stt/ggml-small-q8_0.bin")
                             .to_str()

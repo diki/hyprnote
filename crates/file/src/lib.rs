@@ -151,8 +151,7 @@ pub async fn download_file_parallel<F: Fn(DownloadProgress) + Send + Sync>(
     }
 
     let head_response = get_client().head(url.clone()).send().await?;
-    let total_size = get_content_length_from_headers(&head_response)
-        .ok_or_else(|| OtherError("Content-Length header missing".to_string()))?;
+    let total_size = get_content_length_from_headers(&head_response);
 
     let supports_ranges = head_response
         .headers()
@@ -161,12 +160,14 @@ pub async fn download_file_parallel<F: Fn(DownloadProgress) + Send + Sync>(
         .unwrap_or("")
         == "bytes";
 
-    if !supports_ranges || total_size <= DEFAULT_CHUNK_SIZE {
+    if !supports_ranges || total_size.unwrap_or(0) <= DEFAULT_CHUNK_SIZE {
         return download_file_with_callback(url, output_path, move |progress| {
             progress_callback(progress)
         })
         .await;
     }
+
+    let total_size = total_size.unwrap();
 
     let existing_size = if output_path.as_ref().exists() {
         file_size(&output_path)?
@@ -299,45 +300,52 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn test_calculate_file_checksum() {
-        let base = dirs::data_dir().unwrap().join("com.hyprnote.dev");
+    fn test_calculate_file_size_and_checksum() {
+        let base = "/Users/yujonglee/dev/hyprnote/out";
 
-        let files = vec![
-            base.join("ggml-tiny.en-q8_0.bin"),
-            base.join("ggml-base.en-q8_0.bin"),
-            base.join("ggml-small.en-q8_0.bin"),
-            base.join("ggml-large-v3-turbo-q8_0.bin"),
-            base.join("ggml-tiny-q8_0.bin"),
-            base.join("ggml-base-q8_0.bin"),
-            base.join("ggml-small-q8_0.bin"),
-            base.join("hypr-llm.gguf"),
-        ];
+        fn walk_dir(dir: &std::path::Path) -> std::io::Result<()> {
+            for entry in std::fs::read_dir(dir)? {
+                let entry = entry?;
+                let path = entry.path();
 
-        for file in files {
-            let checksum = calculate_file_checksum(&file).unwrap();
-            println!("[{:?}]\n{}\n\n", file, checksum);
+                if path.is_file() {
+                    let metadata = std::fs::metadata(&path)?;
+                    let size = metadata.len();
+
+                    match calculate_file_checksum(&path) {
+                        Ok(checksum) => {
+                            println!(
+                                "{} | Size: {} bytes | Checksum: {}",
+                                path.display(),
+                                size,
+                                checksum
+                            );
+                        }
+                        Err(e) => {
+                            println!(
+                                "{} | Size: {} bytes | Checksum: Error - {}",
+                                path.display(),
+                                size,
+                                e
+                            );
+                        }
+                    }
+                } else if path.is_dir() {
+                    if let Err(e) = walk_dir(&path) {
+                        eprintln!("Error walking directory {}: {}", path.display(), e);
+                    }
+                }
+            }
+            Ok(())
         }
-    }
 
-    #[test]
-    #[ignore]
-    fn test_file_size() {
-        let base = dirs::data_dir().unwrap().join("com.hyprnote.dev");
-
-        let files = vec![
-            base.join("ggml-tiny.en-q8_0.bin"),
-            base.join("ggml-base.en-q8_0.bin"),
-            base.join("ggml-small.en-q8_0.bin"),
-            base.join("ggml-large-v3-turbo-q8_0.bin"),
-            base.join("ggml-tiny-q8_0.bin"),
-            base.join("ggml-base-q8_0.bin"),
-            base.join("ggml-small-q8_0.bin"),
-            base.join("hypr-llm.gguf"),
-        ];
-
-        for file in files {
-            let size = file_size(&file).unwrap();
-            println!("[{:?}]\n{}\n\n", file, size);
+        let base_path = std::path::Path::new(base);
+        if base_path.exists() {
+            if let Err(e) = walk_dir(base_path) {
+                eprintln!("Error walking base directory: {}", e);
+            }
+        } else {
+            println!("Base directory does not exist: {}", base);
         }
     }
 

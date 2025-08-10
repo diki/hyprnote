@@ -1,14 +1,14 @@
 [package]
 name = "owhisper-server"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 
 [features]
 macos-default = ["coreml", "metal"]
 linux-default = []
 
-cuda = ["hypr-transcribe-whisper-local/cuda"]
-coreml = ["hypr-transcribe-whisper-local/coreml"]
+cuda = ["hypr-transcribe-whisper-local/cuda", "hypr-transcribe-moonshine/cuda"]
+coreml = ["hypr-transcribe-whisper-local/coreml", "hypr-transcribe-moonshine/coreml"]
 metal = ["hypr-transcribe-whisper-local/metal"]
 
 [build-dependencies]
@@ -27,6 +27,7 @@ owhisper-config = { workspace = true }
 owhisper-interface = { workspace = true }
 owhisper-model = { workspace = true }
 
+hypr-agc = { workspace = true }
 hypr-audio = { workspace = true }
 hypr-audio-utils = { workspace = true }
 hypr-file = { workspace = true }
@@ -44,6 +45,7 @@ aide = { version = "0.15.0", features = ["axum"] }
 axum = { workspace = true }
 axum-extra = { workspace = true, features = ["typed-header"] }
 futures-util = { workspace = true }
+rustls = { version = "0.23.31", features = ["ring"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tower = { workspace = true }
 tower-http = { workspace = true, features = ["trace"] }
@@ -58,12 +60,13 @@ indicatif = "0.18.0"
 log = { workspace = true }
 ratatui = "0.29.0"
 similar = { workspace = true }
+termtree = "0.5.1"
 
 cpal = { workspace = true }
-rubato = "0.16.2"
 
 anyhow = { workspace = true }
 dirs = { workspace = true }
 open = "5"
 schemars = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

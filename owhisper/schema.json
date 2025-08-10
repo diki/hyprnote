@@ -100,8 +100,8 @@
         {
           "type": "object",
           "required": [
+            "assets_dir",
             "id",
-            "model_path",
             "type"
           ],
           "properties": {
@@ -114,11 +114,44 @@
             "id": {
               "type": "string"
             },
-            "model_path": {
+            "assets_dir": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "assets_dir",
+            "id",
+            "size",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "moonshine"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "size": {
+              "$ref": "#/definitions/MoonshineModelSize"
+            },
+            "assets_dir": {
               "type": "string"
             }
           }
         }
+      ]
+    },
+    "MoonshineModelSize": {
+      "type": "string",
+      "enum": [
+        "tiny",
+        "base"
       ]
     }
   }

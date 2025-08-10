@@ -278,8 +278,7 @@ export function useChatLogic({
       return;
     }
 
-    if (messages.length >= 14 && !getLicense.data?.valid) {
-      // Fire and forget analytics - don't block chat functionality
+    if (messages.length >= 6 && !getLicense.data?.valid) {
       if (userId) {
         analyticsCommands
           .event({
@@ -290,7 +289,7 @@ export function useChatLogic({
             console.error("Analytics error (non-blocking):", error);
           });
       }
-      await message("7 messages are allowed per conversation for free users.", {
+      await message("3 messages are allowed per conversation for free users.", {
         title: "Pro License Required",
         kind: "info",
       });

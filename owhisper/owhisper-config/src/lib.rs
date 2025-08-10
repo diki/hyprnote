@@ -12,6 +12,9 @@ macro_rules! common_derives {
 common_derives! {
     #[derive(Default)]
     pub struct Config {
+        #[serde(rename = "$schema", skip_serializing_if = "Option::is_none")]
+        #[schemars(skip)]
+        pub schema: Option<String>,
         pub general: Option<GeneralConfig>,
         pub models: Vec<ModelConfig>,
     }
@@ -26,6 +29,8 @@ common_derives! {
         Deepgram(DeepgramModelConfig),
         #[serde(rename = "whisper-cpp")]
         WhisperCpp(WhisperCppModelConfig),
+        #[serde(rename = "moonshine")]
+        Moonshine(MoonshineModelConfig),
     }
 }
 
@@ -35,6 +40,7 @@ impl ModelConfig {
             ModelConfig::Aws(config) => &config.id,
             ModelConfig::Deepgram(config) => &config.id,
             ModelConfig::WhisperCpp(config) => &config.id,
+            ModelConfig::Moonshine(config) => &config.id,
         }
     }
 }
@@ -97,6 +103,23 @@ common_derives! {
 common_derives! {
     pub struct WhisperCppModelConfig {
         pub id: String,
-        pub model_path: String,
+        pub assets_dir: String,
+    }
+}
+
+common_derives! {
+    pub struct MoonshineModelConfig {
+        pub id: String,
+        pub size: MoonshineModelSize,
+        pub assets_dir: String,
+    }
+}
+
+common_derives! {
+    pub enum MoonshineModelSize {
+        #[serde(rename = "tiny")]
+        Tiny,
+        #[serde(rename = "base")]
+        Base,
     }
 }
