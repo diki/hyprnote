@@ -1,6 +1,5 @@
-use std::time::{Duration, Instant};
-
 use statig::prelude::*;
+use std::time::{Duration, Instant};
 
 use tauri::Manager;
 use tauri_specta::Event;
@@ -10,7 +9,7 @@ use tokio::task::JoinSet;
 
 use hypr_audio::AsyncSource;
 
-use crate::SessionEvent;
+use crate::{manager::TranscriptManager, SessionEvent};
 
 const SAMPLE_RATE: u32 = 16000;
 const AUDIO_AMPLITUDE_THROTTLE: Duration = Duration::from_millis(100);
@@ -208,7 +207,7 @@ impl Session {
         let user_id = self.app.db_user_id().await?.unwrap();
         self.session_id = Some(session_id.clone());
 
-        let (record, languages, jargons, redemption_time_ms) = {
+        let (record, languages, jargons) = {
             let config = self.app.db_get_config(&user_id).await?;
 
             let record = config
@@ -224,18 +223,8 @@ impl Session {
                 .as_ref()
                 .map_or_else(Vec::new, |c| c.general.jargons.clone());
 
-            let redemption_time_ms = config
-                .as_ref()
-                .map_or_else(|| 500, |c| c.ai.redemption_time_ms.unwrap_or(500));
-
-            (record, languages, jargons, redemption_time_ms)
+            (record, languages, jargons)
         };
-
-        let session = self
-            .app
-            .db_get_session(&session_id)
-            .await?
-            .ok_or(crate::Error::NoneSession)?;
 
         let (mic_muted_tx, mic_muted_rx_main) = tokio::sync::watch::channel(false);
         let (speaker_muted_tx, speaker_muted_rx_main) = tokio::sync::watch::channel(false);
@@ -255,7 +244,6 @@ impl Session {
             languages,
             jargons,
             session_id == onboarding_session_id,
-            redemption_time_ms,
         )
         .await?;
 
@@ -451,16 +439,16 @@ impl Session {
         let mic_audio_stream = channels
             .process_mic_rx
             .into_stream()
-            .map(hypr_audio_utils::f32_to_i16_bytes);
+            .map(|v| hypr_audio_utils::f32_to_i16_bytes(v.into_iter()));
+
         let speaker_audio_stream = channels
             .process_speaker_rx
             .into_stream()
-            .map(hypr_audio_utils::f32_to_i16_bytes);
+            .map(|v| hypr_audio_utils::f32_to_i16_bytes(v.into_iter()));
 
         tasks.spawn({
             let app = self.app.clone();
             let stop_tx = stop_tx.clone();
-            let session = session.clone();
 
             async move {
                 let listen_stream = listen_client
@@ -470,38 +458,32 @@ impl Session {
 
                 futures_util::pin_mut!(listen_stream);
 
+                let mut manager = TranscriptManager::default();
+
                 loop {
                     match tokio::time::timeout(LISTEN_STREAM_TIMEOUT, listen_stream.next()).await {
-                        Ok(Some(result)) => {
-                            let words = match result {
-                                owhisper_interface::StreamResponse::TranscriptResponse {
-                                    channel,
-                                    ..
-                                } => channel
-                                    .alternatives
-                                    .first()
-                                    .map(|alt| {
-                                        alt.words
-                                            .iter()
-                                            .map(|w| owhisper_interface::Word2::from(w.clone()))
-                                            .collect::<Vec<_>>()
-                                    })
-                                    .unwrap_or_default(),
-                                _ => {
-                                    continue;
-                                }
-                            };
+                        Ok(Some(response)) => {
+                            let diff = manager.append(response.clone());
 
-                            if !words.is_empty() {
-                                let updated_words =
-                                    update_session(&app, &session.id, words).await.unwrap();
-
-                                SessionEvent::Words {
-                                    words: updated_words,
-                                }
-                                .emit(&app)
-                                .unwrap();
+                            SessionEvent::PartialWords {
+                                words: diff
+                                    .partial_words
+                                    .iter()
+                                    .map(|w| owhisper_interface::Word2::from(w.clone()))
+                                    .collect::<Vec<_>>(),
                             }
+                            .emit(&app)
+                            .unwrap();
+
+                            SessionEvent::FinalWords {
+                                words: diff
+                                    .final_words
+                                    .iter()
+                                    .map(|w| owhisper_interface::Word2::from(w.clone()))
+                                    .collect::<Vec<_>>(),
+                            }
+                            .emit(&app)
+                            .unwrap();
                         }
                         Ok(None) => {
                             tracing::info!("listen_stream_ended");
@@ -583,7 +565,6 @@ async fn setup_listen_client<R: tauri::Runtime>(
     languages: Vec<hypr_language::Language>,
     _jargons: Vec<String>,
     is_onboarding: bool,
-    redemption_time_ms: u32,
 ) -> Result<owhisper_client::ListenClientDual, crate::Error> {
     let api_base = {
         use tauri_plugin_connector::{Connection, ConnectorPluginExt};
@@ -609,34 +590,10 @@ async fn setup_listen_client<R: tauri::Runtime>(
         .params(owhisper_interface::ListenParams {
             languages,
             static_prompt,
-            redemption_time_ms: if is_onboarding {
-                70
-            } else {
-                redemption_time_ms.into()
-            },
+            redemption_time_ms: if is_onboarding { 70 } else { 500 },
             ..Default::default()
         })
         .build_dual())
-}
-
-async fn update_session<R: tauri::Runtime>(
-    app: &tauri::AppHandle<R>,
-    session_id: impl Into<String>,
-    words: Vec<owhisper_interface::Word2>,
-) -> Result<Vec<owhisper_interface::Word2>, crate::Error> {
-    use tauri_plugin_db::DatabasePluginExt;
-
-    // TODO: not ideal. We might want to only do "update" everywhere instead of upserts.
-    // We do this because it is highly likely that the session fetched in the listener is stale (session can be updated on the React side).
-    let mut session = app
-        .db_get_session(session_id)
-        .await?
-        .ok_or(crate::Error::NoneSession)?;
-
-    session.words.extend(words);
-    app.db_upsert_session(session.clone()).await.unwrap();
-
-    Ok(session.words)
 }
 
 pub enum StateEvent {

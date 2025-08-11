@@ -1,4 +1,4 @@
-use std::{future::Future, path::PathBuf};
+use std::{collections::HashMap, future::Future, path::PathBuf};
 
 use tauri::{ipc::Channel, Manager, Runtime};
 use tauri_plugin_shell::ShellExt;
@@ -26,6 +26,9 @@ pub trait LocalSttPluginExt<R: Runtime> {
         &self,
         server_type: Option<ServerType>,
     ) -> impl Future<Output = Result<bool, crate::Error>>;
+    fn get_servers(
+        &self,
+    ) -> impl Future<Output = Result<HashMap<ServerType, Option<String>>, crate::Error>>;
 
     fn get_current_model(&self) -> Result<WhisperModel, crate::Error>;
     fn set_current_model(&self, model: WhisperModel) -> Result<(), crate::Error>;
@@ -112,6 +115,16 @@ impl<R: Runtime, T: Manager<R>> LocalSttPluginExt<R> for T {
                     return Err(crate::Error::ModelNotDownloaded);
                 }
 
+                if self
+                    .state::<crate::SharedState>()
+                    .lock()
+                    .await
+                    .internal_server
+                    .is_some()
+                {
+                    return Err(crate::Error::ServerAlreadyRunning);
+                }
+
                 let server_state = internal::ServerState::builder()
                     .model_cache_dir(cache_dir)
                     .model_type(model)
@@ -130,11 +143,61 @@ impl<R: Runtime, T: Manager<R>> LocalSttPluginExt<R> for T {
                 Ok(api_base)
             }
             ServerType::External => {
-                let cmd = self.shell().sidecar("stt")?;
+                if self
+                    .state::<crate::SharedState>()
+                    .lock()
+                    .await
+                    .external_server
+                    .is_some()
+                {
+                    return Err(crate::Error::ServerAlreadyRunning);
+                }
+
+                let am_key = {
+                    let state = self.state::<crate::SharedState>();
+                    let key = state.lock().await.am_api_key.clone();
+                    key.clone().ok_or(crate::Error::AmApiKeyNotSet)?
+                };
+
+                let cmd: tauri_plugin_shell::process::Command = {
+                    #[cfg(debug_assertions)]
+                    {
+                        let passthrough_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                            .join("../../internal/passthrough-aarch64-apple-darwin");
+                        let stt_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                            .join("../../internal/stt-aarch64-apple-darwin");
+
+                        if !passthrough_path.exists() || !stt_path.exists() {
+                            return Err(crate::Error::AmBinaryNotFound);
+                        }
+
+                        self.shell().command(passthrough_path).arg(stt_path).args([
+                            "serve",
+                            "--any-token",
+                            "--verbose",
+                        ])
+                    }
+
+                    #[cfg(not(debug_assertions))]
+                    self.shell().sidecar("stt")?.args(["serve"])
+                };
 
                 let server = external::run_server(cmd).await?;
                 let api_base = server.api_base.clone();
                 tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+                let client = hypr_am::Client::new(&api_base);
+                let status = client.status().await?;
+                println!("Status: {status:?}");
+
+                let init_result = client
+                    .init(
+                        hypr_am::InitRequest::new(am_key)
+                            .with_model(hypr_am::Model::WhisperSmallEn.model_key())
+                            .with_model_repo(hypr_am::Model::WhisperSmallEn.repo_name()),
+                    )
+                    .await?;
+                println!("Init result: {init_result:?}");
 
                 {
                     let state = self.state::<crate::SharedState>();
@@ -156,29 +219,48 @@ impl<R: Runtime, T: Manager<R>> LocalSttPluginExt<R> for T {
         match server_type {
             Some(ServerType::External) => {
                 if let Some(server) = s.external_server.take() {
-                    let _ = server.shutdown.send(());
+                    let _ = server.terminate();
                     stopped = true;
                 }
             }
             Some(ServerType::Internal) => {
                 if let Some(server) = s.internal_server.take() {
-                    let _ = server.shutdown.send(());
+                    let _ = server.terminate();
                     stopped = true;
                 }
             }
             None => {
                 if let Some(server) = s.external_server.take() {
-                    let _ = server.shutdown.send(());
+                    let _ = server.terminate();
                     stopped = true;
                 }
                 if let Some(server) = s.internal_server.take() {
-                    let _ = server.shutdown.send(());
+                    let _ = server.terminate();
                     stopped = true;
                 }
             }
         }
 
         Ok(stopped)
+    }
+
+    #[tracing::instrument(skip_all)]
+    async fn get_servers(&self) -> Result<HashMap<ServerType, Option<String>>, crate::Error> {
+        let state = self.state::<crate::SharedState>();
+        let guard = state.lock().await;
+
+        Ok([
+            (
+                ServerType::Internal,
+                guard.internal_server.as_ref().map(|s| s.api_base.clone()),
+            ),
+            (
+                ServerType::External,
+                guard.external_server.as_ref().map(|s| s.api_base.clone()),
+            ),
+        ]
+        .into_iter()
+        .collect())
     }
 
     #[tracing::instrument(skip_all)]
