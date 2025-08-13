@@ -207,7 +207,7 @@ impl Session {
         let user_id = self.app.db_user_id().await?.unwrap();
         self.session_id = Some(session_id.clone());
 
-        let (record, languages, jargons) = {
+        let (record, languages) = {
             let config = self.app.db_get_config(&user_id).await?;
 
             let record = config
@@ -219,12 +219,14 @@ impl Session {
                 |c| c.general.spoken_languages.clone(),
             );
 
-            let jargons = config
-                .as_ref()
-                .map_or_else(Vec::new, |c| c.general.jargons.clone());
-
-            (record, languages, jargons)
+            (record, languages)
         };
+
+        let session = self
+            .app
+            .db_get_session(&session_id)
+            .await?
+            .ok_or(crate::Error::NoneSession)?;
 
         let (mic_muted_tx, mic_muted_rx_main) = tokio::sync::watch::channel(false);
         let (speaker_muted_tx, speaker_muted_rx_main) = tokio::sync::watch::channel(false);
@@ -239,13 +241,8 @@ impl Session {
         self.speaker_muted_rx = Some(speaker_muted_rx_main.clone());
         self.session_state_tx = Some(session_state_tx);
 
-        let listen_client = setup_listen_client(
-            &self.app,
-            languages,
-            jargons,
-            session_id == onboarding_session_id,
-        )
-        .await?;
+        let listen_client =
+            setup_listen_client(&self.app, languages, session_id == onboarding_session_id).await?;
 
         let mic_sample_stream = {
             let mut input = hypr_audio::AudioInput::from_mic(self.mic_device_name.clone())?;
@@ -465,29 +462,36 @@ impl Session {
                         Ok(Some(response)) => {
                             let diff = manager.append(response.clone());
 
+                            let partial_words = diff
+                                .partial_words
+                                .iter()
+                                .map(|w| owhisper_interface::Word2::from(w.clone()))
+                                .collect::<Vec<_>>();
+
                             SessionEvent::PartialWords {
-                                words: diff
-                                    .partial_words
-                                    .iter()
-                                    .map(|w| owhisper_interface::Word2::from(w.clone()))
-                                    .collect::<Vec<_>>(),
+                                words: partial_words,
                             }
                             .emit(&app)
                             .unwrap();
 
-                            SessionEvent::FinalWords {
-                                words: diff
-                                    .final_words
-                                    .iter()
-                                    .map(|w| owhisper_interface::Word2::from(w.clone()))
-                                    .collect::<Vec<_>>(),
-                            }
-                            .emit(&app)
-                            .unwrap();
+                            let final_words = diff
+                                .final_words
+                                .iter()
+                                .map(|w| owhisper_interface::Word2::from(w.clone()))
+                                .collect::<Vec<_>>();
+
+                            update_session(&app, &session.id, final_words.clone())
+                                .await
+                                .unwrap();
+
+                            SessionEvent::FinalWords { words: final_words }
+                                .emit(&app)
+                                .unwrap();
                         }
                         Ok(None) => {
                             tracing::info!("listen_stream_ended");
 
+                            // TODO: this not work - session still on ACTIVE
                             if stop_tx.send(()).await.is_err() {
                                 tracing::warn!("failed_to_send_stop_signal");
                             }
@@ -563,7 +567,6 @@ impl Session {
 async fn setup_listen_client<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     languages: Vec<hypr_language::Language>,
-    _jargons: Vec<String>,
     is_onboarding: bool,
 ) -> Result<owhisper_client::ListenClientDual, crate::Error> {
     let api_base = {
@@ -581,19 +584,35 @@ async fn setup_listen_client<R: tauri::Runtime>(
 
     tracing::info!(api_base = ?api_base, api_key = ?api_key, languages = ?languages, "listen_client");
 
-    // Disabled static prompt since it seems to degrade transcription quality.
-    let static_prompt = "".to_string();
-
     Ok(owhisper_client::ListenClient::builder()
         .api_base(api_base)
         .api_key(api_key)
         .params(owhisper_interface::ListenParams {
             languages,
-            static_prompt,
-            redemption_time_ms: if is_onboarding { 70 } else { 500 },
+            redemption_time_ms: Some(if is_onboarding { 70 } else { 500 }),
             ..Default::default()
         })
         .build_dual())
+}
+
+async fn update_session<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    session_id: impl Into<String>,
+    words: Vec<owhisper_interface::Word2>,
+) -> Result<Vec<owhisper_interface::Word2>, crate::Error> {
+    use tauri_plugin_db::DatabasePluginExt;
+
+    // TODO: not ideal. We might want to only do "update" everywhere instead of upserts.
+    // We do this because it is highly likely that the session fetched in the listener is stale (session can be updated on the React side).
+    let mut session = app
+        .db_get_session(session_id)
+        .await?
+        .ok_or(crate::Error::NoneSession)?;
+
+    session.words.extend(words);
+    app.db_upsert_session(session.clone()).await.unwrap();
+
+    Ok(session.words)
 }
 
 pub enum StateEvent {

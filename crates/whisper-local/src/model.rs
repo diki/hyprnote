@@ -18,8 +18,6 @@ lazy_static! {
 pub struct WhisperBuilder {
     model_path: Option<String>,
     languages: Option<Vec<Language>>,
-    static_prompt: Option<String>,
-    dynamic_prompt: Option<String>,
 }
 
 impl WhisperBuilder {
@@ -33,17 +31,7 @@ impl WhisperBuilder {
         self
     }
 
-    pub fn static_prompt(mut self, static_prompt: impl Into<String>) -> Self {
-        self.static_prompt = Some(static_prompt.into());
-        self
-    }
-
-    pub fn dynamic_prompt(mut self, dynamic_prompt: impl Into<String>) -> Self {
-        self.dynamic_prompt = Some(dynamic_prompt.into());
-        self
-    }
-
-    pub fn build(self) -> Whisper {
+    pub fn build(self) -> Result<Whisper, crate::Error> {
         unsafe { Self::suppress_log() };
 
         let context_param = {
@@ -56,20 +44,22 @@ impl WhisperBuilder {
         };
 
         let model_path = self.model_path.unwrap();
+        if !std::path::Path::new(&model_path).exists() {
+            return Err(crate::Error::ModelNotFound);
+        }
 
-        let ctx = WhisperContext::new_with_params(&model_path, context_param).unwrap();
-        let state = ctx.create_state().unwrap();
+        let ctx = WhisperContext::new_with_params(&model_path, context_param)?;
+        let state = ctx.create_state()?;
         let token_eot = ctx.token_eot();
         let token_beg = ctx.token_beg();
 
-        Whisper {
+        Ok(Whisper {
             languages: self.languages.unwrap_or_default(),
-            static_prompt: self.static_prompt.unwrap_or_default(),
-            dynamic_prompt: self.dynamic_prompt.unwrap_or_default(),
+            dynamic_prompt: "".to_string(),
             state,
             token_eot,
             token_beg,
-        }
+        })
     }
 
     unsafe fn suppress_log() {
@@ -85,7 +75,6 @@ impl WhisperBuilder {
 
 pub struct Whisper {
     languages: Vec<Language>,
-    static_prompt: String,
     dynamic_prompt: String,
     state: WhisperState,
     token_eot: WhisperToken,
@@ -110,7 +99,7 @@ impl Whisper {
         let params = {
             let mut p = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
 
-            let parts = [self.static_prompt.trim(), self.dynamic_prompt.trim()];
+            let parts = [self.dynamic_prompt.trim()];
             let joined = parts.join("\n");
             let initial_prompt = joined.trim();
 
@@ -187,11 +176,13 @@ impl Whisper {
 
     fn get_language(&mut self, audio: &[f32]) -> Result<Option<String>, super::Error> {
         if self.languages.len() == 0 {
+            tracing::info!("no_language_specified");
             return Ok(None);
         }
 
         if self.languages.len() == 1 {
             let lang = &self.languages[0];
+            tracing::info!("single_language_specified: {}", lang);
             return Ok(Some(lang.to_string()));
         }
 
@@ -213,6 +204,7 @@ impl Whisper {
                 }
             }
 
+            tracing::info!("predicted: {:#?}, from: {:#?}", best_lang, self.languages);
             best_lang
         };
 
@@ -352,7 +344,8 @@ mod tests {
     fn test_whisper() {
         let mut whisper = Whisper::builder()
             .model_path(concat!(env!("CARGO_MANIFEST_DIR"), "/model.bin"))
-            .build();
+            .build()
+            .unwrap();
 
         let audio: Vec<f32> = hypr_data::english_1::AUDIO
             .chunks_exact(2)
@@ -374,7 +367,8 @@ mod tests {
 
         let mut whisper = Whisper::builder()
             .model_path(concat!(env!("CARGO_MANIFEST_DIR"), "/model.bin"))
-            .build();
+            .build()
+            .unwrap();
 
         let request = hypr_llama::LlamaRequest {
             messages: vec![hypr_llama::LlamaChatMessage::new(
