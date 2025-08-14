@@ -24,9 +24,7 @@ export function useTranscript(sessionId: string | null) {
   const [partialWords, setPartialWords] = useState<Word[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
 
-  const words = useMemo(() => {
-    return [...finalWords, ...partialWords];
-  }, [finalWords, partialWords]);
+  const words = useMemo(() => [...finalWords, ...partialWords], [finalWords, partialWords]);
 
   const existingWords = useQuery({
     enabled: !!sessionId,
@@ -55,11 +53,9 @@ export function useTranscript(sessionId: string | null) {
 
     listenerEvents.sessionEvent.listen(({ payload }) => {
       if (payload.type === "finalWords") {
-        setFinalWords(
-          prev => [...prev, ...(payload.words as Word[]).map(w => ({ ...w, confidence: 1 }))],
-        );
+        setFinalWords((existing) => [...existing, ...payload.words]);
       } else if (payload.type === "partialWords") {
-        setPartialWords((payload.words as Word[]).map(w => ({ ...w, confidence: 0.1 })));
+        setPartialWords((payload.words as Word[]).map(w => ({ ...w, confidence: -1 })));
       }
     }).then((fn) => {
       unlisten = fn;
