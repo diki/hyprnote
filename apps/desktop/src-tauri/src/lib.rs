@@ -83,6 +83,7 @@ pub async fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_webhook::init())
+        .plugin(tauri_plugin_mcp::init())
         .plugin(tauri_plugin_obsidian::init())
         .plugin(tauri_plugin_sfx::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -148,7 +149,6 @@ pub async fn main() {
             let handler = specta_builder.invoke_handler();
             move |invoke| handler(invoke)
         })
-        .on_window_event(tauri_plugin_windows::on_window_event)
         .setup(move |app| {
             let app = app.handle().clone();
 
