@@ -442,23 +442,59 @@ impl Session {
             .into_stream()
             .map(|v| hypr_audio_utils::f32_to_i16_bytes(v.into_iter()));
 
+        let combined_audio_stream =
+            mic_audio_stream
+                .zip(speaker_audio_stream)
+                .map(|(mic, speaker)| {
+                    owhisper_interface::MixedMessage::Audio((mic.into(), speaker.into()))
+                });
+
         tasks.spawn({
             let app = self.app.clone();
             let stop_tx = stop_tx.clone();
 
             async move {
-                let listen_stream = listen_client
-                    .from_realtime_audio(mic_audio_stream, speaker_audio_stream)
+                let (listen_stream, listen_handle) = listen_client
+                    .from_realtime_audio(combined_audio_stream)
                     .await
                     .unwrap();
 
                 futures_util::pin_mut!(listen_stream);
 
                 let mut manager = TranscriptManager::default();
+                let mut last_final_time: Option<tokio::time::Instant> = None;
 
                 loop {
                     match tokio::time::timeout(LISTEN_STREAM_TIMEOUT, listen_stream.next()).await {
                         Ok(Some(response)) => {
+                            if let owhisper_interface::StreamResponse::TranscriptResponse {
+                                is_final,
+                                ..
+                            } = &response
+                            {
+                                match (is_final, last_final_time) {
+                                    (false, Some(prev)) => {
+                                        if prev.elapsed() > std::time::Duration::from_secs(10)
+                                        {
+                                            listen_handle
+                                                .finalize_with_text(
+                                                    serde_json::to_string(
+                                                        &owhisper_interface::ControlMessage::Finalize,
+                                                    )
+                                                    .unwrap()
+                                                    .into(),
+                                                )
+                                                .await;
+
+                                            last_final_time = None
+                                        }
+                                    }
+                                    _ => {
+                                        last_final_time = Some(tokio::time::Instant::now());
+                                    }
+                                }
+                            }
+
                             let diff = manager.append(response.clone());
 
                             let partial_words = diff
