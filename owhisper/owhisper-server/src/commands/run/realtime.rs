@@ -148,7 +148,9 @@ async fn run_audio_stream_with_stop(
                     data.update(rms);
                 }
 
-                hypr_audio_utils::f32_to_i16_bytes(samples.into_iter())
+                owhisper_interface::MixedMessage::Audio(
+                    hypr_audio_utils::f32_to_i16_bytes(samples.into_iter()).into(),
+                )
             })
     };
 
@@ -162,7 +164,7 @@ async fn run_audio_stream_with_stop(
         })
         .build_single();
 
-    let response_stream = client.from_realtime_audio(mic_stream).await?;
+    let (response_stream, _) = client.from_realtime_audio(mic_stream).await?;
     futures_util::pin_mut!(response_stream);
 
     while let Some(chunk) = response_stream.next().await {
