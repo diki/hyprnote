@@ -256,7 +256,7 @@ msgstr "(Beta) Detect meetings automatically"
 msgid "(Beta) Upcoming meeting notifications"
 msgstr "(Beta) Upcoming meeting notifications"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:594
+#: src/components/settings/components/ai/llm-custom-view.tsx:617
 msgid "(Optional for localhost)"
 msgstr "(Optional for localhost)"
 
@@ -324,7 +324,7 @@ msgstr "Access granted"
 msgid "Access Granted"
 msgstr "Access Granted"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:459
+#: src/components/settings/components/ai/llm-custom-view.tsx:482
 msgid "Access multiple AI models through OpenRouter with your API key"
 msgstr "Access multiple AI models through OpenRouter with your API key"
 
@@ -399,7 +399,7 @@ msgid "Anyone with the link can view this page"
 msgstr "Anyone with the link can view this page"
 
 #: src/components/welcome-modal/custom-endpoint-view.tsx:498
-#: src/components/settings/components/ai/llm-custom-view.tsx:569
+#: src/components/settings/components/ai/llm-custom-view.tsx:592
 msgid "API Base URL"
 msgstr "API Base URL"
 
@@ -408,10 +408,10 @@ msgstr "API Base URL"
 #: src/components/welcome-modal/custom-endpoint-view.tsx:438
 #: src/components/welcome-modal/custom-endpoint-view.tsx:518
 #: src/components/settings/views/integrations.tsx:203
-#: src/components/settings/components/ai/llm-custom-view.tsx:277
-#: src/components/settings/components/ai/llm-custom-view.tsx:373
-#: src/components/settings/components/ai/llm-custom-view.tsx:479
-#: src/components/settings/components/ai/llm-custom-view.tsx:591
+#: src/components/settings/components/ai/llm-custom-view.tsx:300
+#: src/components/settings/components/ai/llm-custom-view.tsx:396
+#: src/components/settings/components/ai/llm-custom-view.tsx:502
+#: src/components/settings/components/ai/llm-custom-view.tsx:614
 msgid "API Key"
 msgstr "API Key"
 
@@ -440,7 +440,7 @@ msgstr "Audio Permissions"
 #~ msgid "Auto (Default)"
 #~ msgstr "Auto (Default)"
 
-#: src/components/settings/views/ai-llm.tsx:642
+#: src/components/settings/views/ai-llm.tsx:711
 msgid "Autonomy Selector"
 msgstr "Autonomy Selector"
 
@@ -469,7 +469,7 @@ msgstr "Base URL"
 msgid "Built-in Templates"
 msgstr "Built-in Templates"
 
-#: src/routes/app.settings.tsx:58
+#: src/routes/app.settings.tsx:59
 msgid "Calendar"
 msgstr "Calendar"
 
@@ -565,7 +565,7 @@ msgstr "Configure Your LLM"
 #~ msgid "Connect"
 #~ msgstr "Connect"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:549
+#: src/components/settings/components/ai/llm-custom-view.tsx:572
 msgid "Connect to a self-hosted or third-party LLM endpoint (OpenAI API compatible)"
 msgstr "Connect to a self-hosted or third-party LLM endpoint (OpenAI API compatible)"
 
@@ -614,7 +614,7 @@ msgstr "Continue"
 #~ msgid "Continue Setup"
 #~ msgstr "Continue Setup"
 
-#: src/components/settings/views/ai-llm.tsx:661
+#: src/components/settings/views/ai-llm.tsx:730
 msgid "Control how autonomous the AI enhancement should be"
 msgstr "Control how autonomous the AI enhancement should be"
 
@@ -656,7 +656,7 @@ msgstr "Create your first template to get started"
 #~ msgstr "Current Plan"
 
 #: src/components/settings/views/ai-stt.tsx:66
-#: src/components/settings/views/ai-llm.tsx:620
+#: src/components/settings/views/ai-llm.tsx:689
 msgid "Custom"
 msgstr "Custom"
 
@@ -671,6 +671,11 @@ msgstr "Custom"
 #: src/components/settings/views/general.tsx:390
 msgid "Custom Vocabulary"
 msgstr "Custom Vocabulary"
+
+#: src/components/settings/views/ai-stt.tsx:63
+#: src/components/settings/views/ai-llm.tsx:686
+msgid "Default"
+msgstr "Default"
 
 #: src/components/settings/components/ai/llm-view.tsx:149
 #~ msgid "Default (llama-3.2-3b-q4)"
@@ -762,7 +767,7 @@ msgstr "Enter a section title"
 #~ msgid "Enter the API key for your custom LLM endpoint"
 #~ msgstr "Enter the API key for your custom LLM endpoint"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:572
+#: src/components/settings/components/ai/llm-custom-view.tsx:595
 msgid "Enter the base URL for your custom LLM endpoint"
 msgstr "Enter the base URL for your custom LLM endpoint"
 
@@ -790,8 +795,8 @@ msgstr "Enter the base URL for your custom LLM endpoint"
 msgid "Extract action items"
 msgstr "Extract action items"
 
-#: src/routes/app.settings.tsx:68
-#: src/routes/app.settings.tsx:103
+#: src/routes/app.settings.tsx:69
+#: src/routes/app.settings.tsx:106
 msgid "Feedback"
 msgstr "Feedback"
 
@@ -827,7 +832,7 @@ msgstr "Finish Onboarding"
 msgid "Full name"
 msgstr "Full name"
 
-#: src/routes/app.settings.tsx:52
+#: src/routes/app.settings.tsx:53
 msgid "General"
 msgstr "General"
 
@@ -839,7 +844,7 @@ msgstr "Generating title..."
 msgid "Get Started"
 msgstr "Get Started"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:349
+#: src/components/settings/components/ai/llm-custom-view.tsx:372
 msgid "Google Gemini"
 msgstr "Google Gemini"
 
@@ -895,12 +900,12 @@ msgstr "Important Q&As"
 #~ msgid "Integration with other apps like Notion and Google Calendar"
 #~ msgstr "Integration with other apps like Notion and Google Calendar"
 
-#: src/routes/app.settings.tsx:66
+#: src/routes/app.settings.tsx:67
 #: src/components/settings/views/integrations.tsx:124
 msgid "Integrations"
 msgstr "Integrations"
 
-#: src/routes/app.settings.tsx:54
+#: src/routes/app.settings.tsx:55
 msgid "Intelligence"
 msgstr "Intelligence"
 
@@ -948,7 +953,7 @@ msgstr "Language for AI-generated summaries"
 #~ msgid "Language Model"
 #~ msgstr "Language Model"
 
-#: src/components/settings/views/ai-llm.tsx:656
+#: src/components/settings/views/ai-llm.tsx:725
 msgid "Learn more about AI autonomy"
 msgstr "Learn more about AI autonomy"
 
@@ -960,7 +965,7 @@ msgstr "Learn more about AI autonomy"
 msgid "Learn more about templates"
 msgstr "Learn more about templates"
 
-#: src/routes/app.settings.tsx:70
+#: src/routes/app.settings.tsx:71
 msgid "License"
 msgstr "License"
 
@@ -980,7 +985,7 @@ msgstr "LinkedIn username"
 #~ msgid "LLM - Local"
 #~ msgstr "LLM - Local"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:628
+#: src/components/settings/components/ai/llm-custom-view.tsx:651
 msgid "Loading available models..."
 msgstr "Loading available models..."
 
@@ -1002,8 +1007,8 @@ msgstr "Loading..."
 
 #: src/components/settings/views/ai-stt.tsx:63
 #: src/components/settings/views/ai-llm.tsx:617
-msgid "Local"
-msgstr "Local"
+#~ msgid "Local"
+#~ msgstr "Local"
 
 #: src/components/left-sidebar/top-area/settings-button.tsx:87
 #~ msgid "Local mode"
@@ -1020,6 +1025,10 @@ msgstr "Local"
 #: src/components/share-and-permission/publish.tsx:24
 msgid "Make it public"
 msgstr "Make it public"
+
+#: src/routes/app.settings.tsx:73
+msgid "MCP"
+msgstr "MCP"
 
 #: src/components/settings/views/billing.tsx:41
 #~ msgid "Meeting note sharing via links"
@@ -1042,14 +1051,14 @@ msgstr "Microphone Access"
 #: src/components/welcome-modal/custom-endpoint-view.tsx:315
 #: src/components/welcome-modal/custom-endpoint-view.tsx:382
 #: src/components/welcome-modal/custom-endpoint-view.tsx:459
-#: src/components/settings/components/ai/llm-custom-view.tsx:297
-#: src/components/settings/components/ai/llm-custom-view.tsx:393
-#: src/components/settings/components/ai/llm-custom-view.tsx:499
+#: src/components/settings/components/ai/llm-custom-view.tsx:320
+#: src/components/settings/components/ai/llm-custom-view.tsx:416
+#: src/components/settings/components/ai/llm-custom-view.tsx:522
 msgid "Model"
 msgstr "Model"
 
 #: src/components/welcome-modal/custom-endpoint-view.tsx:544
-#: src/components/settings/components/ai/llm-custom-view.tsx:616
+#: src/components/settings/components/ai/llm-custom-view.tsx:639
 msgid "Model Name"
 msgstr "Model Name"
 
@@ -1142,7 +1151,7 @@ msgstr "No upcoming events for this organization"
 msgid "No upcoming events with this contact"
 msgstr "No upcoming events with this contact"
 
-#: src/routes/app.settings.tsx:60
+#: src/routes/app.settings.tsx:61
 msgid "Notifications"
 msgstr "Notifications"
 
@@ -1177,11 +1186,11 @@ msgstr "Open in new window"
 #~ msgid "Open Note"
 #~ msgstr "Open Note"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:253
+#: src/components/settings/components/ai/llm-custom-view.tsx:276
 msgid "OpenAI"
 msgstr "OpenAI"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:455
+#: src/components/settings/components/ai/llm-custom-view.tsx:478
 msgid "OpenRouter"
 msgstr "OpenRouter"
 
@@ -1193,7 +1202,7 @@ msgstr "Optional base folder path within your Obsidian vault."
 msgid "Optional for participant suggestions"
 msgstr "Optional for participant suggestions"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:546
+#: src/components/settings/components/ai/llm-custom-view.tsx:569
 msgid "Others"
 msgstr "Others"
 
@@ -1339,7 +1348,7 @@ msgstr "Search..."
 msgid "Sections"
 msgstr "Sections"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:619
+#: src/components/settings/components/ai/llm-custom-view.tsx:642
 msgid "Select a model from the dropdown (if available) or manually enter the model name required by your endpoint."
 msgstr "Select a model from the dropdown (if available) or manually enter the model name required by your endpoint."
 
@@ -1419,7 +1428,7 @@ msgstr "Show notifications when you join a meeting."
 msgid "Some downloads failed, but you can continue"
 msgstr "Some downloads failed, but you can continue"
 
-#: src/routes/app.settings.tsx:64
+#: src/routes/app.settings.tsx:65
 msgid "Sound"
 msgstr "Sound"
 
@@ -1496,7 +1505,7 @@ msgstr "Teamspace"
 msgid "Template"
 msgstr "Template"
 
-#: src/routes/app.settings.tsx:62
+#: src/routes/app.settings.tsx:63
 msgid "Templates"
 msgstr "Templates"
 
@@ -1560,7 +1569,7 @@ msgstr "Toggle transcript panel"
 #~ msgid "Transcribing"
 #~ msgstr "Transcribing"
 
-#: src/routes/app.settings.tsx:56
+#: src/routes/app.settings.tsx:57
 msgid "Transcription"
 msgstr "Transcription"
 
@@ -1600,11 +1609,11 @@ msgstr "Upcoming Events"
 #~ msgid "Upgrade"
 #~ msgstr "Upgrade"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:353
+#: src/components/settings/components/ai/llm-custom-view.tsx:376
 msgid "Use Google's Gemini models with your API key"
 msgstr "Use Google's Gemini models with your API key"
 
-#: src/components/settings/components/ai/llm-custom-view.tsx:257
+#: src/components/settings/components/ai/llm-custom-view.tsx:280
 msgid "Use OpenAI's GPT models with your API key"
 msgstr "Use OpenAI's GPT models with your API key"
 
