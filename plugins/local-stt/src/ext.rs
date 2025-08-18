@@ -68,18 +68,18 @@ impl<R: Runtime, T: Manager<R>> LocalSttPluginExt<R> for T {
     async fn get_connection(&self) -> Result<Connection, crate::Error> {
         let model = self.get_current_model()?;
 
-        let am_key = {
-            let state = self.state::<crate::SharedState>();
-            let key = state.lock().await.am_api_key.clone();
-            key.clone().ok_or(crate::Error::AmApiKeyNotSet)?
-        };
-
         match model {
             SupportedSttModel::Am(_) => {
                 let existing_api_base = {
                     let state = self.state::<crate::SharedState>();
                     let guard = state.lock().await;
                     guard.external_server.as_ref().map(|s| s.base_url.clone())
+                };
+
+                let am_key = {
+                    let state = self.state::<crate::SharedState>();
+                    let key = state.lock().await.am_api_key.clone();
+                    key.clone().ok_or(crate::Error::AmApiKeyNotSet)?
                 };
 
                 let conn = match existing_api_base {
@@ -400,6 +400,13 @@ impl<R: Runtime, T: Manager<R>> LocalSttPluginExt<R> for T {
                         download_file_parallel(m.model_url(), &model_path, callback).await
                     {
                         tracing::error!("model_download_error: {}", e);
+                        let _ = channel.send(-1);
+                    }
+
+                    let checksum = hypr_file::calculate_file_checksum(&model_path).unwrap();
+
+                    if checksum != m.checksum() {
+                        tracing::error!("model_download_error: checksum mismatch");
                         let _ = channel.send(-1);
                     }
                 });
