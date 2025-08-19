@@ -14,7 +14,7 @@ import {
 } from "../components/chat";
 
 import { useActiveEntity } from "../hooks/useActiveEntity";
-import { useChatLogic } from "../hooks/useChatLogic";
+import { useChatLogic } from "../hooks/useChatLogicWrapper";
 import { useChatQueries } from "../hooks/useChatQueries";
 import type { Message } from "../types/chat-types";
 import { focusInput, formatDate } from "../utils/chat-utils";
