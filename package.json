@@ -1,10 +1,6 @@
 {
   "packageManager": "pnpm@10.11.1",
   "devDependencies": {
-    "turbo": "^2.5.5"
-  },
-  "scripts": {
-    "dev:desktop": "pnpm --filter @hypr/desktop tauri:dev",
-    "dev:desktop-dev": "REACT_APP_USE_DEV=true pnpm --filter @hypr/desktop tauri:dev"
+    "turbo": "^2.5.6"
   }
 }
