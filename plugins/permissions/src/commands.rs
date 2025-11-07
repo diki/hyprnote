@@ -97,13 +97,29 @@ pub async fn request_system_audio_permission<R: tauri::Runtime>(
 #[tauri::command]
 #[specta::specta]
 pub async fn check_accessibility_permission<R: tauri::Runtime>(
-    _app: tauri::AppHandle<R>,
+    app: tauri::AppHandle<R>,
 ) -> Result<PermissionStatus, String> {
     #[cfg(target_os = "macos")]
     {
+        let bundle_id = app.config().identifier.clone();
+        tracing::debug!("Checking accessibility permission for bundle: {}", bundle_id);
+        
+        // Use macos-accessibility-client as primary check (accessibility is not managed through TCC)
         let is_trusted = macos_accessibility_client::accessibility::application_is_trusted();
-        Ok(if is_trusted {
+        tracing::debug!("Accessibility trusted status: {}", is_trusted);
+        
+        if is_trusted {
+            return Ok(PermissionStatus::Authorized);
+        }
+        
+        // Check TCC as fallback (though accessibility may not be in TCC)
+        let tcc_status = hypr_tcc::accessibility_permission_status();
+        tracing::debug!("Accessibility TCC status (fallback): {}", tcc_status);
+        
+        Ok(if tcc_status == hypr_tcc::GRANTED {
             PermissionStatus::Authorized
+        } else if tcc_status == hypr_tcc::NEVER_ASKED {
+            PermissionStatus::NeverRequested
         } else {
             PermissionStatus::Denied
         })
@@ -118,12 +134,37 @@ pub async fn check_accessibility_permission<R: tauri::Runtime>(
 #[tauri::command]
 #[specta::specta]
 pub async fn request_accessibility_permission<R: tauri::Runtime>(
-    _app: tauri::AppHandle<R>,
+    app: tauri::AppHandle<R>,
 ) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
+        let bundle_id = app.config().identifier.clone();
+        tracing::debug!("Requesting accessibility permission for bundle: {}", bundle_id);
         macos_accessibility_client::accessibility::application_is_trusted_with_prompt();
+        tracing::debug!("Accessibility permission prompt shown");
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_check_accessibility_permission_direct() {
+        use macos_accessibility_client::accessibility;
+        
+        let is_trusted = accessibility::application_is_trusted();
+        println!("\n=== Accessibility Permission Check ===");
+        println!("macos-accessibility-client result: {}", is_trusted);
+        
+        if is_trusted {
+            println!("✓ Permission is GRANTED - macos-accessibility-client detected it");
+        } else {
+            println!("✗ Permission is NOT granted - macos-accessibility-client returned false");
+            println!("  Make sure the permission is enabled in System Settings > Privacy & Security > Accessibility");
+            println!("  And that you've fully quit and restarted the app (Cmd+Q)");
+        }
+        println!("=====================================\n");
+    }
 }

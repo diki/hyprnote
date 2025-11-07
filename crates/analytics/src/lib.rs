@@ -20,6 +20,10 @@ impl AnalyticsClient {
     }
 
     pub async fn event(&self, payload: AnalyticsPayload) -> Result<(), Error> {
+        if self.api_key.is_empty() {
+            return Ok(());
+        }
+
         if !hypr_network::is_online().await {
             return Ok(());
         }
@@ -49,6 +53,10 @@ impl AnalyticsClient {
     }
 
     pub async fn set_properties(&self, payload: PropertiesPayload) -> Result<(), Error> {
+        if self.api_key.is_empty() {
+            return Ok(());
+        }
+
         if !hypr_network::is_online().await {
             return Ok(());
         }
@@ -85,6 +93,10 @@ impl AnalyticsClient {
     }
 
     pub async fn event2(&self, user_id: impl Into<String>) -> Result<(), Error> {
+        if self.api_key.is_empty() {
+            return Ok(());
+        }
+
         let payload = serde_json::json!({ "user_id": user_id.into() });
         if !cfg!(debug_assertions) {
             let _ = self

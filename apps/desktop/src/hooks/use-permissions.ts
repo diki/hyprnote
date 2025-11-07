@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { message } from "@tauri-apps/plugin-dialog";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { Command } from "@tauri-apps/plugin-shell";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 import { commands as permissionsCommands } from "@hypr/plugin-permissions";
 
@@ -32,14 +33,16 @@ export function usePermissions() {
 
   const accessibilityPermissionStatus = useQuery({
     queryKey: ["accessibilityPermission"],
-    queryFn: () => permissionsCommands.checkAccessibilityPermission(),
-    refetchInterval: 1000,
-    select: (result) => {
+    queryFn: async () => {
+      const result = await permissionsCommands.checkAccessibilityPermission();
       if (result.status === "error") {
+        console.error("Accessibility permission check error:", result.error);
         throw new Error(result.error);
       }
+      console.log("Accessibility permission status:", result.data);
       return result.data;
     },
+    refetchInterval: 1000,
   });
 
   const micPermission = useMutation({
@@ -93,10 +96,22 @@ export function usePermissions() {
   };
 
   const openAccessibilitySettings = async () => {
-    await Command.create("exec-sh", [
-      "-c",
-      "open 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'",
-    ]).execute();
+    try {
+      // Use the system preferences URL scheme
+      const url = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility";
+      await openUrl(url);
+    } catch (error) {
+      console.error("Failed to open accessibility settings with URL scheme:", error);
+      // Fallback: use shell command
+      try {
+        await Command.create("exec-sh", [
+          "-c",
+          "open 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'",
+        ]).execute();
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+      }
+    }
   };
 
   const handleMicPermissionAction = async () => {

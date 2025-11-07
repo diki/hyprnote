@@ -50,3 +50,16 @@ public func _reset_microphone_permission(bundleId: SRString) -> Bool {
   let nsString = NSString(string: String(describing: bundleId))
   return reset("kTCCServiceMicrophone" as CFString, nsString as CFString) == 0
 }
+
+@_cdecl("_accessibility_permission_status")
+public func _accessibility_permission_status() -> Int {
+  guard let apiHandle,
+    let funcSym = dlsym(apiHandle, "TCCAccessPreflight"),
+    let preflight = unsafeBitCast(funcSym, to: PreflightFuncType.self) as PreflightFuncType?
+  else {
+    return -1
+  }
+
+  let result = preflight("kTCCServiceAccessibility" as CFString, nil)
+  return result
+}

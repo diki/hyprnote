@@ -10,6 +10,9 @@ swift!(fn _reset_audio_capture_permission(bundle_id: SRString) -> Bool);
 #[cfg(target_os = "macos")]
 swift!(fn _reset_microphone_permission(bundle_id: SRString) -> Bool);
 
+#[cfg(target_os = "macos")]
+swift!(fn _accessibility_permission_status() -> Int);
+
 pub const TCC_ERROR: isize = -1;
 pub const NEVER_ASKED: isize = 2;
 pub const DENIED: isize = 1;
@@ -45,6 +48,16 @@ pub fn reset_microphone_permission(bundle_id: impl Into<String>) -> bool {
     true
 }
 
+pub fn accessibility_permission_status() -> isize {
+    #[cfg(target_os = "macos")]
+    unsafe {
+        _accessibility_permission_status()
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    2
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -72,5 +85,21 @@ mod tests {
         #[cfg(target_os = "macos")]
         let result = reset_microphone_permission("com.hyprnote.nightly");
         println!("reset_microphone_permission: {}", result);
+    }
+
+    #[test]
+    fn test_accessibility_permission_status() {
+        #[cfg(target_os = "macos")]
+        {
+            let result = accessibility_permission_status();
+            println!("Accessibility permission status: {}", result);
+            match result {
+                GRANTED => println!("Status: GRANTED (0)"),
+                DENIED => println!("Status: DENIED (1)"),
+                NEVER_ASKED => println!("Status: NEVER_ASKED (2)"),
+                TCC_ERROR => println!("Status: TCC_ERROR (-1)"),
+                _ => println!("Status: Unknown ({})", result),
+            }
+        }
     }
 }

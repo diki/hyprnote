@@ -33,8 +33,8 @@ export function PermissionRow({
     buttonText = "Access Granted";
   } else if (isDenied) {
     displayMessage = variant === "compact"
-      ? "You should toggle in the Settings manually"
-      : "Access denied - Open Settings to enable";
+      ? "You should toggle in the Settings manually, then fully quit and restart the app"
+      : "Access denied - Open Settings to enable, then fully quit and restart the app (Cmd+Q)";
     buttonText = "Open Settings";
   } else {
     displayMessage = description || "You need to grant access to use Hyprnote";

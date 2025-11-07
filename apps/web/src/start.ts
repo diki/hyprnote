@@ -7,6 +7,6 @@ const sentryGlobalMiddleware = createMiddleware()
 
 export const startInstance = createStart(() => {
   return {
-    requestMiddleware: [sentryGlobalMiddleware],
+    requestMiddleware: [],
   };
 });
